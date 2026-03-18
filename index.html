@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MoneyHero - CHC Compliance Prototype (Dashboard + Compliant PL)</title>
+<style>
+  /* ── Password Gate ── */
+  #password-gate{position:fixed;inset:0;z-index:9999;background:#1a1a2e;display:flex;align-items:center;justify-content:center}
+  #password-gate.hidden{display:none}
+  .gate-box{background:#fff;border-radius:16px;padding:40px 36px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.3);max-width:380px;width:90%}
+  .gate-box h2{font-size:18px;color:#333;margin-bottom:6px}
+  .gate-box p{font-size:13px;color:#888;margin-bottom:24px}
+  .gate-box input{width:100%;padding:12px 16px;border:2px solid #ddd;border-radius:8px;font-size:15px;text-align:center;outline:none}
+  .gate-box input:focus{border-color:#00b7b2}
+  .gate-box input.error{border-color:#ef4444;animation:shake .3s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .gate-box button{margin-top:16px;width:100%;padding:12px;border:none;border-radius:8px;background:#00b7b2;color:#fff;font-size:15px;font-weight:600;cursor:pointer}
+  .gate-error{color:#ef4444;font-size:12px;margin-top:8px;min-height:18px}
+  #app-content{display:none}
+  #app-content.visible{display:block}
+
+  /* ── Base ── */
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Noto Sans TC","PingFang HK",sans-serif;background:#f5f5f5;color:#333;font-size:14px;line-height:1.5}
+  a{text-decoration:none;color:inherit}
+  img{display:block;max-width:100%}
+
+  /* ── Proto Controls (top bar) ── */
+  .proto-bar{position:sticky;top:0;z-index:1000;background:#1a1a2e;color:#fff;padding:10px 16px;display:flex;flex-direction:column;gap:8px}
+  .proto-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .proto-bar .plabel{font-size:10px;text-transform:uppercase;letter-spacing:.8px;opacity:.5;flex-shrink:0}
+  .proto-bar select{padding:6px 10px;border-radius:5px;border:1.5px solid rgba(255,255,255,.3);background:#2a2a4e;color:#fff;font-size:11px;font-weight:600;cursor:pointer;max-width:420px}
+  .proto-bar select option{background:#2a2a4e;color:#fff}
+  .proto-bar button{padding:6px 12px;border:1.5px solid rgba(255,255,255,.3);border-radius:5px;background:transparent;color:#fff;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .proto-bar button:hover{border-color:#fff}
+  .proto-bar button.active{background:#fff;color:#1a1a2e;border-color:#fff}
+  .dev-notes-btn{margin-left:auto}
+
+  /* ── Step Pills ── */
+  .step-pills{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0}
+  .step-pills::-webkit-scrollbar{display:none}
+  .step-pill{flex-shrink:0;padding:5px 12px;border-radius:16px;font-size:10px;font-weight:600;cursor:pointer;border:1.5px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.6);transition:all .2s;white-space:nowrap}
+  .step-pill:hover{border-color:rgba(255,255,255,.5);color:#fff}
+  .step-pill.active{background:#00b7b2;color:#fff;border-color:#00b7b2}
+  .step-pill.completed{background:rgba(0,183,178,.3);color:#fff;border-color:#00b7b2}
+
+  /* ── Step Info Bar ── */
+  .step-info{background:#2a2a4e;padding:10px 16px;display:flex;align-items:center;gap:12px}
+  .step-info .step-number{background:#00b7b2;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+  .step-info .step-title{font-size:13px;font-weight:600;color:#fff}
+  .step-info .step-desc{font-size:11px;color:rgba(255,255,255,.6)}
+
+  /* ── Developer Notes ── */
+  .dev-note{display:none;background:#fef3cd;border:1px solid #ffc107;border-radius:6px;padding:10px 14px;margin:8px 16px;font-size:12px;color:#664d03;line-height:1.6}
+  .dev-note.visible{display:block}
+  .dev-note strong{color:#332700}
+  .dev-note::before{content:'DEV NOTE';display:block;font-size:9px;font-weight:700;letter-spacing:1px;color:#997404;margin-bottom:4px}
+
+  /* ── Screen Container ── */
+  .screen-container{position:relative;min-height:calc(100vh - 200px)}
+  .screen{display:none;animation:fadeIn .3s ease}
+  .screen.active{display:block}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+  /* ── Navigation ── */
+  .nav-bar{display:flex;justify-content:space-between;align-items:center;padding:16px;max-width:1080px;margin:0 auto}
+  .nav-btn{padding:10px 24px;border-radius:8px;border:2px solid #00b7b2;background:#fff;color:#00b7b2;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .nav-btn:hover{background:#00b7b2;color:#fff}
+  .nav-btn:disabled{opacity:.3;cursor:not-allowed;border-color:#ccc;color:#ccc}
+  .nav-btn:disabled:hover{background:#fff}
+  .nav-btn.primary{background:#00b7b2;color:#fff}
+  .nav-btn.primary:hover{background:#009e99}
+
+  /* ── Header ── */
+  .site-header{background:#fff;border-bottom:1px solid #e0e0e0;padding:10px 20px;display:flex;align-items:center;justify-content:space-between}
+  .logo-img{height:28px}
+  .hamburger{font-size:22px;color:#333;cursor:pointer;display:none}
+  .user-icon{width:32px;height:32px;border-radius:50%;background:#f0f0f0;display:none;align-items:center;justify-content:center;font-size:16px;color:#888}
+  .header-nav{display:flex;gap:20px;font-size:14px;color:#555}
+  .header-nav .active-link{font-weight:700;color:#00b7b2}
+
+  /* ── Breadcrumb ── */
+  .breadcrumb{padding:10px 20px;font-size:12px;color:#888;background:#fff}
+  .breadcrumb a{color:#888}
+  .breadcrumb span{margin:0 4px;color:#ccc}
+
+  /* ── Page Heading ── */
+  .page-heading{background:#fff;padding:20px 20px 16px;border-bottom:1px solid #eee}
+  .page-heading h1{font-size:26px;font-weight:800;color:#222;line-height:1.3;margin-bottom:6px}
+  .page-heading .updated-date{font-size:12px;color:#999;margin-bottom:12px}
+  .page-heading .description{font-size:14px;color:#555;line-height:1.6}
+  .page-heading .show-more{color:#222;font-weight:600;text-decoration:underline;cursor:pointer;display:inline-block;margin-top:4px;font-size:14px}
+
+  /* ── Container ── */
+  .container{max-width:1080px;margin:0 auto;padding:20px 16px}
+
+  /* ── Odds Banner ── */
+  .odds-banner{border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500}
+  .odds-banner .icon{font-size:18px;flex-shrink:0}
+  .odds-banner a,.odds-banner .banner-link{font-weight:600;text-decoration:underline;cursor:pointer;color:inherit}
+  .odds-banner.fresh{background:#e6f9f0;border:1px solid #b2ecd3;color:#1a6b44}
+  .odds-banner.stale{background:#fff7e6;border:1px solid #ffe0a3;color:#7a5c1f}
+  .odds-banner.guest{background:#e8f0fe;border:1px solid #b3cef7;color:#1a3f7a}
+  .odds-banner.informational{background:#fff8f0;border:1px solid #ffe0a3;color:#7a5c1f}
+
+  /* ── Why MoneyHero ── */
+  .why-mh{background:#fff;border:1px solid #eee;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;color:#333}
+  .why-mh img{width:28px;height:28px;border-radius:50%}
+  .why-mh .arrow{margin-left:auto;font-size:12px;color:#999}
+
+  /* ── Tabs ── */
+  .tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex-shrink:0;padding:8px 16px;border-radius:20px;background:#fff;border:1px solid #ddd;font-size:13px;color:#555;cursor:pointer;white-space:nowrap}
+  .tab.active{background:#00b7b2;color:#fff;border-color:#00b7b2}
+
+  /* ── Quick Summary ── */
+  .quick-summary{font-size:13px;font-weight:600;color:#333;margin-bottom:14px;cursor:pointer;display:flex;align-items:center;gap:6px}
+
+  /* ── Loan Calculator ── */
+  .calc-row{display:flex;gap:12px;margin-bottom:18px}
+  .calc-field{flex:1}
+  .calc-field label{font-size:12px;color:#777;display:flex;align-items:center;gap:4px;margin-bottom:4px}
+  .calc-field label .info-sm{width:14px;height:14px;border-radius:50%;border:1px solid #bbb;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#999}
+  .calc-field input{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;font-weight:600;color:#333;background:#fff}
+
+  /* ── Results ── */
+  .results-info{font-size:13px;color:#777;margin-bottom:12px}
+  .results-info strong{color:#333}
+
+  /* ── Product Table ── */
+  .product-table{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:24px}
+  .product-table::-webkit-scrollbar{height:6px}
+  .product-table::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+  .product-table-inner{min-width:920px}
+  .table-header{display:grid;grid-template-columns:220px 110px 90px 100px 100px 110px 100px;padding:12px 16px;background:#fafafa;border-bottom:2px solid #eee;font-size:11px;font-weight:600;color:#888;align-items:center}
+  .table-header>div{padding:0 6px}
+  .col-odds-header{display:flex;align-items:center;gap:4px;color:#e67e00;font-weight:700}
+  .tooltip-trigger{cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+  .product-row{display:grid;grid-template-columns:220px 110px 90px 100px 100px 110px 100px;padding:14px 16px;border-bottom:1px solid #f0f0f0;align-items:center}
+  .product-row:hover{background:#fafcff}
+  .product-row>div{padding:0 6px}
+  .provider{display:flex;align-items:center;gap:10px}
+  .provider-logo{width:56px;height:56px;border-radius:8px;border:1px solid #eee;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:#fff;padding:4px}
+  .provider-logo img{width:100%;height:100%;object-fit:contain}
+  .provider-name{font-size:13px;font-weight:600;color:#222;line-height:1.3}
+  .provider-tag{display:inline-block;font-size:10px;color:#fff;background:#e67e00;border-radius:3px;padding:1px 6px;margin-top:2px;font-weight:600}
+  .provider-tag.tax{background:#0072aa}.provider-tag.fast{background:#8e24aa}.provider-tag.exclusive{background:#d32f2f}.provider-tag.balance{background:#00695c}
+  .provider-reward{font-size:11px;color:#e67e00;margin-top:2px}
+  .cell .value{font-weight:700;color:#222;font-size:14px}
+  .cell .label{font-size:10px;color:#999;margin-top:1px}
+  .btn-apply{padding:9px 14px;border-radius:6px;border:2px solid #e67e00;background:#fff;color:#e67e00;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .btn-apply:hover{background:#e67e00;color:#fff}
+
+  /* ── Odds Cell ── */
+  .odds-cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .odds-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700}
+  .odds-badge.high{background:#e6f9f0;color:#15803d}
+  .odds-badge.high::before{content:'';width:7px;height:7px;border-radius:50%;background:#22c55e}
+  .odds-badge.medium{background:#fff7e6;color:#a16207}
+  .odds-badge.medium::before{content:'';width:7px;height:7px;border-radius:50%;background:#eab308}
+  .odds-badge.low{background:#fef2f2;color:#b91c1c}
+  .odds-badge.low::before{content:'';width:7px;height:7px;border-radius:50%;background:#ef4444}
+  .odds-signin{font-size:11px;color:#0066cc;font-weight:600;cursor:pointer;text-decoration:underline}
+
+  /* ── Product Cards ── */
+  .cards-section{margin-top:8px}
+  .cards-section-title{font-size:16px;font-weight:700;color:#222;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .cards-section-title .count-badge{background:#e67e00;color:#fff;font-size:11px;font-weight:700;border-radius:12px;padding:2px 10px}
+  .product-card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;overflow:hidden}
+  .card-header{padding:16px 20px;display:flex;align-items:flex-start;gap:14px}
+  .card-logo{width:64px;height:64px;border-radius:10px;border:1px solid #eee;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;background:#fff;padding:4px}
+  .card-logo img{width:100%;height:100%;object-fit:contain}
+  .card-header-info{flex:1;min-width:0}
+  .card-product-name{font-size:15px;font-weight:700;color:#222;line-height:1.4;margin-bottom:4px}
+  .card-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+  .card-tag{font-size:10px;color:#fff;background:#e67e00;border-radius:3px;padding:2px 8px;font-weight:600}
+  .card-tag.tax{background:#0072aa}.card-tag.fast{background:#8e24aa}.card-tag.exclusive{background:#d32f2f}.card-tag.balance{background:#00695c}
+  .card-reward-line{font-size:12px;color:#e67e00;font-weight:600}
+  .card-header-apply{flex-shrink:0;align-self:center}
+  .card-header-apply .btn-apply{padding:10px 20px;font-size:14px}
+  .card-stats{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #f0f0f0;border-bottom:1px solid #f0f0f0}
+  .card-stat{padding:14px 16px;text-align:center;border-right:1px solid #f0f0f0}
+  .card-stat:last-child{border-right:none}
+  .card-stat .stat-label{font-size:11px;color:#888;margin-bottom:4px}
+  .card-stat .stat-value{font-size:16px;font-weight:700;color:#222}
+  .card-odds-banner{padding:14px 20px;border-top:1px solid #f0f0f0;display:flex;align-items:center;gap:12px;background:#fafcff}
+  .card-odds-banner .cob-label{font-size:13px;font-weight:600;color:#e67e00;white-space:nowrap;display:flex;align-items:center;gap:4px}
+  .card-odds-banner .cob-label .info-icon{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1.5px solid #e67e00;font-size:8px;cursor:pointer}
+  .card-odds-banner .cob-badge{flex-shrink:0}
+  .card-odds-banner .cob-meta{font-size:11px;color:#999;margin-left:auto;white-space:nowrap}
+
+  /* JS-positioned tooltip */
+  .floating-tooltip{display:none;position:fixed;background:#333;color:#fff;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:400;width:260px;line-height:1.5;white-space:normal;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,.2);pointer-events:none}
+  .floating-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#333}
+
+  .card-accordions{padding:0}
+  .card-accordion{border-bottom:1px solid #f0f0f0}
+  .card-accordion:last-child{border-bottom:none}
+  .card-accordion-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;font-size:14px;font-weight:600;color:#333}
+  .card-accordion-header:hover{background:#fafafa}
+  .card-accordion-header .acc-arrow{font-size:12px;color:#999;transition:transform .2s}
+  .card-accordion-header.open .acc-arrow{transform:rotate(180deg)}
+  .card-accordion-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+  .card-accordion-body.open{max-height:400px}
+  .card-accordion-content{padding:0 20px 16px}
+  .card-reward-detail{display:flex;align-items:center;gap:10px;padding:8px 0}
+  .card-reward-detail .reward-icon{font-size:20px}
+  .card-reward-detail .reward-text{font-size:14px;font-weight:600;color:#e67e00}
+  .card-steps{list-style:none;counter-reset:step}
+  .card-steps li{counter-increment:step;position:relative;padding:6px 0 6px 32px;font-size:13px;color:#555}
+  .card-steps li::before{content:counter(step);position:absolute;left:0;top:5px;width:22px;height:22px;border-radius:50%;background:#e67e00;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+  /* ── CHC Dashboard Styles ── */
+  .chc-header{background:#fff;padding:10px 20px;display:flex;align-items:center;justify-content:center;position:relative;border-bottom:1px solid #e0e0e0}
+  .chc-header .chc-logo{height:28px}
+  .chc-header .chc-logout{position:absolute;right:20px;font-size:13px;color:#555;cursor:pointer}
+  .chc-header .chc-logout:hover{color:#00b7b2}
+
+  .chc-hero{background:#1a3c6e;padding:40px 24px 0;color:#fff}
+  .chc-hero-inner{max-width:1080px;margin:0 auto;display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap}
+  .chc-hero-left{flex:1;min-width:280px}
+  .chc-hero-left h2{font-size:24px;font-weight:700;margin-bottom:6px}
+  .chc-hero-left .chc-updated{font-size:12px;opacity:.7;margin-bottom:6px}
+  .chc-hero-left .chc-tu{font-size:12px;opacity:.6;display:flex;align-items:center;gap:4px}
+  .chc-hero-right{flex:1;min-width:300px}
+  .chc-score-row{display:flex;gap:32px;margin-bottom:12px}
+  .chc-score-col{flex:1}
+  .chc-score-col .score-label{font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+  .chc-score-col .score-value{font-size:48px;font-weight:800;line-height:1}
+  .chc-score-col .score-value .decimal{font-size:24px;font-weight:600}
+  .chc-score-col .rating-value{font-size:36px;font-weight:700;font-style:italic;line-height:1}
+  .chc-insight-msg{font-size:14px;opacity:.85;margin-bottom:16px;line-height:1.5}
+  .chc-actions{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;max-width:320px}
+  .chc-btn-teal{display:block;padding:12px 24px;background:#00b7b2;color:#fff;font-size:14px;font-weight:700;border-radius:8px;text-align:center;cursor:pointer;border:none;width:100%}
+  .chc-btn-teal:hover{background:#009e99}
+  .chc-btn-outline{display:block;padding:12px 24px;background:transparent;color:#fff;font-size:14px;font-weight:700;border-radius:8px;text-align:center;cursor:pointer;border:2px solid #fff;width:100%}
+  .chc-btn-outline:hover{background:rgba(255,255,255,.1)}
+  .chc-link-teal{color:#00b7b2;font-size:13px;text-decoration:underline;cursor:pointer;display:inline-block}
+
+  .chc-habits-strip{background:rgba(255,255,255,.1);padding:14px 24px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+  .chc-habits-strip:hover{background:rgba(255,255,255,.15)}
+  .chc-habits-strip span{font-size:14px;font-weight:600;color:#fff}
+
+  /* Dashboard Loans Section */
+  .chc-loans{max-width:1080px;margin:0 auto;padding:32px 16px}
+  .chc-loans h3{font-size:18px;font-weight:700;color:#222;margin-bottom:4px}
+  .chc-loans .subtitle{font-size:14px;color:#888;margin-bottom:16px}
+  .chc-loans .chc-calc{display:flex;gap:12px;margin-bottom:16px}
+  .chc-loans .chc-calc .calc-input{flex:1;display:flex;flex-direction:column}
+  .chc-loans .chc-calc .calc-input label{font-size:12px;color:#777;margin-bottom:4px}
+  .chc-loans .chc-calc .calc-input input{padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-weight:600}
+
+  /* v2 Compliant Filter Bar */
+  .v2-filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .v2-filter-label{font-size:12px;color:#888;font-weight:600;margin-right:2px;flex-shrink:0}
+  .v2-sort-btn{padding:8px 16px;border-radius:20px;border:1.5px solid #ddd;background:#fff;font-size:12px;font-weight:600;color:#555;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+  .v2-sort-btn:hover{border-color:#00b7b2;color:#00b7b2}
+  .v2-sort-btn.active{background:#00b7b2;color:#fff;border-color:#00b7b2}
+  .v2-sort-btn-odds{padding:8px 18px;border-radius:20px;border:2px solid #e67e00;background:#fff8f0;font-size:12px;font-weight:700;color:#e67e00;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s;position:relative}
+  .v2-sort-btn-odds:hover{background:#e67e00;color:#fff}
+  .v2-sort-btn-odds.active{background:#e67e00;color:#fff}
+  .v2-badge-new{position:absolute;top:-8px;right:-8px;background:#d32f2f;color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;line-height:1.2}
+  .v2-results-count{font-size:13px;color:#777;margin-bottom:12px}
+  .v2-results-count strong{color:#333}
+  .v2-show-more{display:flex;align-items:center;justify-content:center;width:100%;padding:14px 24px;margin:16px 0 32px;border:2px solid #ddd;border-radius:10px;background:#fff;font-size:14px;font-weight:600;color:#555;cursor:pointer;gap:8px;transition:all .15s;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .v2-show-more:hover{border-color:#00b7b2;color:#00b7b2}
+  .v2-show-more .v2-show-more-arrow{font-size:12px;transition:transform .2s}
+  .v2-show-more.expanded .v2-show-more-arrow{transform:rotate(180deg)}
+
+  .chc-loan-table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:32px}
+  .chc-loan-table thead{background:#fafafa}
+  .chc-loan-table th{padding:10px 12px;font-size:11px;font-weight:600;color:#888;text-align:left;border-bottom:2px solid #eee}
+  .chc-loan-table th.odds-col{color:#e67e00;font-weight:700}
+  .chc-loan-table th.odds-col .tooltip-trigger{cursor:pointer;margin-left:3px}
+  .chc-loan-table th.reward-col{color:#e67e00;background:#fff8f0}
+  .chc-loan-table td.odds-td{text-align:center;vertical-align:middle}
+  .chc-loan-table td{padding:12px;font-size:13px;color:#333;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+  .chc-loan-table td.reward-cell{background:#fff8f0;color:#e67e00;font-weight:700}
+  .chc-loan-table .loan-provider{display:flex;align-items:center;gap:8px}
+  .chc-loan-table .loan-logo{width:36px;height:36px;border-radius:6px;border:1px solid #eee;overflow:hidden;flex-shrink:0;padding:2px;background:#fff}
+  .chc-loan-table .loan-logo img{width:100%;height:100%;object-fit:contain}
+  .chc-loan-table .btn-apply-sm{padding:6px 14px;border:1.5px solid #1a3c6e;border-radius:6px;background:#fff;color:#1a3c6e;font-size:12px;font-weight:600;cursor:pointer}
+  .chc-loan-table .btn-apply-sm:hover{background:#1a3c6e;color:#fff}
+
+  /* Dashboard Product Detail Cards */
+  .chc-detail-card{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:20px;overflow:hidden}
+  .chc-detail-card-header{padding:16px 20px;display:flex;align-items:center;gap:12px}
+  .chc-detail-card-header .dcl{width:48px;height:48px;border-radius:8px;border:1px solid #eee;overflow:hidden;padding:2px;background:#fff;flex-shrink:0}
+  .chc-detail-card-header .dcl img{width:100%;height:100%;object-fit:contain}
+  .chc-detail-card-header .dch-name{font-size:15px;font-weight:700;color:#222}
+  .chc-detail-card .apply-bar{background:#e67e00;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+  .chc-detail-card .apply-bar span{color:#fff;font-weight:700;font-size:14px}
+  .chc-detail-card .detail-grid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #f0f0f0}
+  .chc-detail-card .detail-cell{padding:12px 20px;border-bottom:1px solid #f0f0f0;border-right:1px solid #f0f0f0}
+  .chc-detail-card .detail-cell:nth-child(2n){border-right:none}
+  .chc-detail-card .detail-cell .dc-label{font-size:11px;color:#888;margin-bottom:2px}
+  .chc-detail-card .detail-cell .dc-value{font-size:14px;font-weight:700;color:#222}
+  .chc-detail-card .detail-cell .dc-value.red{color:#d32f2f}
+
+  /* Generic Accordion */
+  .chc-accordion{background:#fff;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,.06);margin-bottom:8px;overflow:hidden}
+  .chc-accordion-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;font-size:14px;font-weight:600;color:#333}
+  .chc-accordion-header:hover{background:#fafafa}
+  .chc-accordion-header .acc-chevron{font-size:12px;color:#999;transition:transform .2s}
+  .chc-accordion-header.open .acc-chevron{transform:rotate(180deg)}
+  .chc-accordion-body{max-height:0;overflow:hidden;transition:max-height .3s ease}
+  .chc-accordion-body.open{max-height:600px}
+  .chc-accordion-content{padding:0 20px 16px;font-size:13px;color:#555;line-height:1.7}
+
+  .chc-section-title{font-size:18px;font-weight:700;color:#222;margin:32px 0 16px}
+
+  /* Footer CTA */
+  .chc-footer-cta{background:#f0f0f0;padding:40px 24px;text-align:center}
+  .chc-footer-cta h3{font-size:20px;font-weight:700;color:#222;margin-bottom:16px}
+  .chc-footer-cta .cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .chc-footer-cta .cta-btns button{padding:12px 28px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer}
+  .chc-footer-cta .btn-cta-teal{background:#00b7b2;color:#fff;border:none}
+  .chc-footer-cta .btn-cta-teal:hover{background:#009e99}
+  .chc-footer-cta .btn-cta-outline{background:#fff;color:#333;border:2px solid #ccc}
+  .chc-footer-cta .btn-cta-outline:hover{border-color:#333}
+
+  .chc-disclaimer{max-width:1080px;margin:0 auto;padding:24px 16px;font-size:11px;color:#999;line-height:1.7}
+  .chc-copyright{max-width:1080px;margin:0 auto;padding:0 16px 32px;font-size:11px;color:#aaa;line-height:1.6}
+  .chc-copyright a{color:#888;text-decoration:underline}
+  .back-to-top{text-align:center;padding:16px;font-size:13px;color:#00b7b2;cursor:pointer;font-weight:600}
+  .back-to-top:hover{text-decoration:underline}
+
+  /* ── Footer ── */
+  .footer{text-align:center;padding:32px 16px;font-size:11px;color:#aaa}
+
+  /* ── MOBILE ── */
+  @media(max-width:768px){
+    .hamburger{display:block}
+    .user-icon{display:flex}
+    .header-nav{display:none}
+    .site-header{padding:10px 16px}
+    .logo-img{height:24px}
+    .breadcrumb{padding:8px 16px;font-size:11px}
+    .page-heading{padding:16px 16px 14px}
+    .page-heading h1{font-size:22px}
+    .container{padding:16px 12px}
+    .odds-banner{padding:12px 14px;font-size:13px}
+    .product-table{border-radius:8px}
+    .provider-logo{width:48px;height:48px}
+    .provider-name{font-size:12px}
+    .provider-reward{font-size:10px}
+    .provider-tag{font-size:9px}
+    .cell .value{font-size:13px}
+    .cell .label{font-size:9px}
+    .btn-apply{padding:7px 10px;font-size:12px}
+    .odds-badge{font-size:11px;padding:3px 10px}
+    .proto-bar{padding:8px 12px;gap:6px}
+    .proto-bar select{font-size:10px;max-width:260px}
+    .proto-bar button{padding:5px 10px;font-size:10px}
+    .step-pill{font-size:9px;padding:4px 10px}
+    .nav-btn{padding:8px 16px;font-size:12px}
+    .card-header{padding:14px 16px;flex-wrap:wrap}
+    .card-logo{width:52px;height:52px}
+    .card-product-name{font-size:14px}
+    .card-header-apply{width:100%;margin-top:8px}
+    .card-header-apply .btn-apply{width:100%;text-align:center;display:block;padding:12px}
+    .card-stats{grid-template-columns:repeat(2,1fr)}
+    .card-stat{padding:10px 12px}
+    .card-stat:nth-child(2){border-right:none}
+    .card-stat .stat-value{font-size:14px}
+    .card-accordion-header{padding:12px 16px;font-size:13px}
+    .card-accordion-content{padding:0 16px 14px}
+    .chc-hero-inner{flex-direction:column;gap:20px}
+    .chc-score-row{gap:20px}
+    .chc-score-col .score-value{font-size:36px}
+    .chc-score-col .rating-value{font-size:28px}
+    .chc-loan-table{font-size:12px}
+    .chc-loan-table th,.chc-loan-table td{padding:8px 6px}
+    .chc-hero{padding:24px 16px 0}
+    .chc-hero-left h2{font-size:20px}
+    .chc-actions{max-width:100%}
+    .chc-habits-strip{padding:12px 16px}
+    .chc-loans{padding:24px 12px}
+    .chc-loans h3{font-size:16px}
+    .chc-loans .subtitle{font-size:13px}
+    .chc-loans .chc-calc{flex-direction:column;gap:8px}
+    .v2-filter-bar{gap:6px}
+    .v2-sort-btn,.v2-sort-btn-odds{padding:7px 12px;font-size:11px}
+    .v2-results-count{font-size:12px}
+    .v2-show-more{padding:12px 16px;font-size:13px}
+    .chc-detail-card-header{padding:12px 16px}
+    .chc-detail-card-header .dcl{width:40px;height:40px}
+    .chc-detail-card-header .dch-name{font-size:14px}
+    .chc-detail-card .detail-grid{grid-template-columns:1fr}
+    .chc-detail-card .detail-cell{border-right:none}
+    .chc-detail-card .apply-bar{padding:10px 16px}
+    .chc-section-title{font-size:16px;margin:24px 0 12px}
+    .chc-footer-cta{padding:28px 16px}
+    .chc-footer-cta .cta-btns{flex-direction:column;gap:10px}
+    .chc-footer-cta .cta-btns button{width:100%}
+    .chc-disclaimer,.chc-copyright{padding-left:12px;padding-right:12px}
+  }
+</style>
+</head>
+<body>
+
+<!-- Password Gate -->
+<div id="password-gate">
+  <div class="gate-box">
+    <h2>Prototype Access</h2>
+    <p>CHC Compliance Prototype &#8212; Internal Review Only</p>
+    <input type="password" id="gate-input" placeholder="Enter password" autofocus>
+    <div class="gate-error" id="gate-error"></div>
+    <button onclick="checkPassword()">Enter</button>
+  </div>
+</div>
+
+<div id="app-content">
+
+<!-- Proto Controls -->
+<div class="proto-bar">
+  <div class="proto-row">
+    <span class="plabel">Scenario:</span>
+    <select id="scenario-picker" onchange="loadScenario(this.value)">
+      <option value="compare">Compare: Original vs Compliant Dashboard</option>
+      <option value="compliant-pl">Compliant PL Results Page</option>
+      <option value="full">Full Compliant Journey</option>
+    </select>
+    <button class="dev-notes-btn" id="dev-notes-toggle" onclick="toggleDevNotes()">Dev Notes: OFF</button>
+  </div>
+  <div class="proto-row">
+    <span class="plabel">Steps:</span>
+    <div class="step-pills" id="step-pills"></div>
+  </div>
+</div>
+
+<!-- Step Info -->
+<div class="step-info" id="step-info">
+  <div class="step-number" id="step-num">1</div>
+  <div>
+    <div class="step-title" id="step-title">Loading...</div>
+    <div class="step-desc" id="step-desc"></div>
+  </div>
+</div>
+
+<!-- ══ ALL SCREENS ══ -->
+<div class="screen-container" id="screen-container">
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- ══ CHC DASHBOARD (ORIGINAL - NON-COMPLIANT) ══ -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-chc-dashboard">
+    <div class="chc-header">
+      <img class="chc-logo" src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/1_moneyhero_dbd2868f87.svg" alt="MoneyHero">
+      <span class="chc-logout">Logout</span>
+    </div>
+    <div class="dev-note" data-note="chc-dashboard"><strong>ORIGINAL (NON-COMPLIANT) VERSION</strong><br>Issues identified:<br>&#8226; Section title "Recommended Loans Based on Your Credit Report" implies credit-data-driven curation<br>&#8226; Subtitle "We match you with the right loans based on your credit score" suggests profiling<br>&#8226; Only 5 products shown (filtered by credit profile, low-odds products hidden)<br>&#8226; Products appear pre-sorted by approval odds<br>&#8226; No user-initiated sort &#8212; platform decides the ordering<br>&#8226; This may constitute "solely automated decision-making" under PDPO s.64</div>
+
+    <!-- Blue Hero -->
+    <div class="chc-hero">
+      <div class="chc-hero-inner">
+        <div class="chc-hero-left">
+          <h2>Hello, FUN FOURTEEN TUCIS</h2>
+          <div class="chc-updated">Last updated: Mar 18, 2026 5:57pm</div>
+          <div class="chc-tu">&#9432; Your credit score is provided by TransUnion</div>
+        </div>
+        <div class="chc-hero-right">
+          <div class="chc-score-row">
+            <div class="chc-score-col">
+              <div class="score-label">Your Credit Score</div>
+              <div class="score-value">2932<span class="decimal">.6000</span></div>
+            </div>
+            <div class="chc-score-col">
+              <div class="score-label">MoneyHero Rating</div>
+              <div class="rating-value">Poor</div>
+            </div>
+          </div>
+          <div class="chc-insight-msg">Your credit grade remains steady &#8212; stability helps build long-term strength.</div>
+          <div class="chc-actions">
+            <button class="chc-btn-teal" onclick="goNext()">Get My Insight</button>
+            <button class="chc-btn-outline">View Full Report</button>
+            <a class="chc-link-teal">See Tips to Improve Credit Score</a>
+          </div>
+        </div>
+      </div>
+      <div class="chc-habits-strip">
+        <span>Build Your Healthy Credit Habits</span>
+        <span style="font-size:18px">&#8594;</span>
+      </div>
+    </div>
+
+    <!-- Recommended Loans (NON-COMPLIANT) -->
+    <div class="chc-loans">
+      <h3>Recommended Loans Based on Your Credit Report</h3>
+      <p class="subtitle">We match you with the right loans based on your credit score.</p>
+      <div class="chc-calc">
+        <div class="calc-input">
+          <label>Loan Amount (HK$)</label>
+          <input type="text" value="180,000" readonly>
+        </div>
+        <div class="calc-input">
+          <label>Tenure (months)</label>
+          <input type="text" value="24" readonly>
+        </div>
+      </div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table class="chc-loan-table">
+          <thead>
+            <tr>
+              <th>Loan</th>
+              <th class="odds-col">&#25209;&#26680;&#27231;&#26371; <span class="tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></th>
+              <th>APR</th>
+              <th>Monthly Repayment</th>
+              <th class="reward-col">MoneyHero Reward</th>
+              <th>Total Interest</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_blta2b1c7656f55bafa_2cd3613af9.webp" alt=""></div>X Cash.AI by X Wallet</div></td>
+              <td class="odds-td"><span class="odds-badge high">&#39640;</span></td>
+              <td>1.15%</td>
+              <td>HK$ 7,994</td>
+              <td class="reward-cell">HK$10,400</td>
+              <td>HK$ 2,246</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xlarge_blt9b38cc40f974e6de_213f8726eb.webp" alt=""></div>CreFIT Cash Loan</div></td>
+              <td class="odds-td"><span class="odds-badge high">&#39640;</span></td>
+              <td>1.38%</td>
+              <td>HK$ 7,608</td>
+              <td class="reward-cell">HK$23,200</td>
+              <td>HK$ 2,588</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_blt4351440a848723f8_4955301d54.webp" alt=""></div>PrimeCredit Fixed Loan</div></td>
+              <td class="odds-td"><span class="odds-badge medium">&#20013;</span></td>
+              <td>1.18%</td>
+              <td>HK$ 7,590</td>
+              <td class="reward-cell">HK$18,000</td>
+              <td>HK$ 2,160</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xlarge_blt85d396e2e90b641d_88c6c1e85e.webp" alt=""></div>&#37030;&#27665; &#29305;&#24555;&#20302;&#24687;&#36024;&#27454;</div></td>
+              <td class="odds-td"><span class="odds-badge high">&#39640;</span></td>
+              <td>1.12%</td>
+              <td>HK$ 7,590</td>
+              <td style="color:#ccc;text-align:center">&#8212;</td>
+              <td>HK$ 2,160</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_bltd2365780e022fcf3_5333673be3.webp" alt=""></div>UA i-Money Express Online Personal Loan</div></td>
+              <td class="odds-td"><span class="odds-badge medium">&#20013;</span></td>
+              <td>1.10%</td>
+              <td>HK$ 7,587</td>
+              <td class="reward-cell">HK$5,800</td>
+              <td>HK$ 2,087</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Product Detail Cards (original 5) -->
+      <div id="chc-detail-cards">
+        <div class="chc-detail-card">
+          <div class="chc-detail-card-header">
+            <div class="dcl"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_blta2b1c7656f55bafa_2cd3613af9.webp" alt=""></div>
+            <div class="dch-name">X Cash.AI by X Wallet</div>
+          </div>
+          <div class="apply-bar"><span>Apply Now &#8599;</span></div>
+          <div class="detail-grid">
+            <div class="detail-cell"><div class="dc-label">Total Interest Paid</div><div class="dc-value red">HK$ 2,246</div></div>
+            <div class="detail-cell"><div class="dc-label">Annual Interest Rate</div><div class="dc-value">1.15%</div></div>
+            <div class="detail-cell"><div class="dc-label">Monthly Repayment</div><div class="dc-value">HK$ 7,994</div></div>
+            <div class="detail-cell"><div class="dc-label">Processing Fee</div><div class="dc-value">HK$ 0</div></div>
+          </div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-accordions">
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero Rewards up to HK$10,400 <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Apply through MoneyHero to receive up to HK$10,400 in rewards.</p></div></div></div>
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#9432; Loan Details <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Loan amount: HK$5,000 - HK$800,000<br>Tenure: 3 - 60 months<br>Age requirement: 18+</p></div></div></div>
+          </div>
+        </div>
+
+        <div class="chc-detail-card">
+          <div class="chc-detail-card-header">
+            <div class="dcl"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xlarge_blt9b38cc40f974e6de_213f8726eb.webp" alt=""></div>
+            <div class="dch-name">CreFIT Cash Loan</div>
+          </div>
+          <div class="apply-bar"><span>Apply Now &#8599;</span></div>
+          <div class="detail-grid">
+            <div class="detail-cell"><div class="dc-label">Total Interest Paid</div><div class="dc-value red">HK$ 2,588</div></div>
+            <div class="detail-cell"><div class="dc-label">Annual Interest Rate</div><div class="dc-value">1.38%</div></div>
+            <div class="detail-cell"><div class="dc-label">Monthly Repayment</div><div class="dc-value">HK$ 7,608</div></div>
+            <div class="detail-cell"><div class="dc-label">Processing Fee</div><div class="dc-value">HK$ 0</div></div>
+          </div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-accordions">
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero Rewards up to HK$23,200 <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Apply through MoneyHero to receive up to HK$23,200 in rewards.</p></div></div></div>
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#9432; Loan Details <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Loan amount: HK$10,000 - HK$500,000<br>Tenure: 6 - 60 months<br>Age requirement: 18+</p></div></div></div>
+          </div>
+        </div>
+
+        <div class="chc-detail-card">
+          <div class="chc-detail-card-header">
+            <div class="dcl"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_blt4351440a848723f8_4955301d54.webp" alt=""></div>
+            <div class="dch-name">PrimeCredit Fixed Loan</div>
+          </div>
+          <div class="apply-bar"><span>Apply Now &#8599;</span></div>
+          <div class="detail-grid">
+            <div class="detail-cell"><div class="dc-label">Total Interest Paid</div><div class="dc-value red">HK$ 2,160</div></div>
+            <div class="detail-cell"><div class="dc-label">Annual Interest Rate</div><div class="dc-value">1.18%</div></div>
+            <div class="detail-cell"><div class="dc-label">Monthly Repayment</div><div class="dc-value">HK$ 7,590</div></div>
+            <div class="detail-cell"><div class="dc-label">Processing Fee</div><div class="dc-value">HK$ 0</div></div>
+          </div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge medium">&#20013;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-accordions">
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#9432; Loan Details <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Loan amount: HK$10,000 - HK$300,000<br>Tenure: 6 - 48 months<br>Age requirement: 18+</p></div></div></div>
+          </div>
+        </div>
+
+        <div class="chc-detail-card">
+          <div class="chc-detail-card-header">
+            <div class="dcl"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xlarge_blt85d396e2e90b641d_88c6c1e85e.webp" alt=""></div>
+            <div class="dch-name">&#37030;&#27665; &#29305;&#24555;&#20302;&#24687;&#36024;&#27454;</div>
+          </div>
+          <div class="apply-bar"><span>Apply Now &#8599;</span></div>
+          <div class="detail-grid">
+            <div class="detail-cell"><div class="dc-label">Total Interest Paid</div><div class="dc-value red">HK$ 2,160</div></div>
+            <div class="detail-cell"><div class="dc-label">Annual Interest Rate</div><div class="dc-value">1.12%</div></div>
+            <div class="detail-cell"><div class="dc-label">Monthly Repayment</div><div class="dc-value">HK$ 7,590</div></div>
+            <div class="detail-cell"><div class="dc-label">Processing Fee</div><div class="dc-value">HK$ 0</div></div>
+          </div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-accordions">
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#9432; Loan Details <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Loan amount: HK$5,000 - HK$500,000<br>Tenure: 3 - 84 months<br>Age requirement: 18+</p></div></div></div>
+          </div>
+        </div>
+
+        <div class="chc-detail-card">
+          <div class="chc-detail-card-header">
+            <div class="dcl"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_bltd2365780e022fcf3_5333673be3.webp" alt=""></div>
+            <div class="dch-name">UA i-Money Express Online Personal Loan</div>
+          </div>
+          <div class="apply-bar"><span>Apply Now &#8599;</span></div>
+          <div class="detail-grid">
+            <div class="detail-cell"><div class="dc-label">Total Interest Paid</div><div class="dc-value red">HK$ 2,087</div></div>
+            <div class="detail-cell"><div class="dc-label">Annual Interest Rate</div><div class="dc-value">1.10%</div></div>
+            <div class="detail-cell"><div class="dc-label">Monthly Repayment</div><div class="dc-value">HK$ 7,587</div></div>
+            <div class="detail-cell"><div class="dc-label">Processing Fee</div><div class="dc-value">HK$ 0</div></div>
+          </div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge medium">&#20013;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-accordions">
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero Rewards up to HK$18,800 <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Apply through MoneyHero to receive up to HK$18,800 in rewards.</p></div></div></div>
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#9432; Loan Details <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Loan amount: HK$10,000 - HK$500,000<br>Tenure: 6 - 60 months<br>Age requirement: 18+</p></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tips -->
+      <h3 class="chc-section-title">Tips to Improve Your Credit Score</h3>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>Always pay your bills on time</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">Payment history is one of the biggest factors in your credit score. Late payments can stay on your record for years. Set up automatic payments or calendar reminders to ensure you never miss a due date.</div></div></div>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>Keep your credit card balances low</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">Try to keep your credit utilisation ratio below 30%. Lower utilisation shows lenders you're managing credit responsibly.</div></div></div>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>Avoid applying for too many credit products at once</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">Each credit application generates a hard inquiry on your report. Multiple inquiries in a short period can lower your score.</div></div></div>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>Check your credit report regularly</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">Regular monitoring helps you spot errors or fraudulent activity early. Dispute any inaccuracies promptly.</div></div></div>
+
+      <h3 class="chc-section-title">Need Some Help?</h3>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>What will my information be used for?</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">Your information is used to retrieve your credit report from TransUnion and to provide personalised product recommendations.</div></div></div>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>How do you protect my personal data?</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">We use industry-standard security measures including encryption, secure data storage, and access controls.</div></div></div>
+
+      <div class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back To Top &#8593;</div>
+    </div>
+
+    <div class="chc-footer-cta">
+      <h3>Ready for Your Deep Dive?</h3>
+      <div class="cta-btns">
+        <button class="btn-cta-teal" onclick="goNext()">Get My Insight</button>
+        <button class="btn-cta-outline">View Full Report</button>
+      </div>
+    </div>
+    <div class="chc-disclaimer"><p>CreditHero is a service provided by MoneyHero Global Limited. The credit score and related information displayed on this platform are provided by TransUnion for informational purposes only.</p></div>
+    <div class="chc-copyright"><p>&copy; 2013-2026 MoneyHero Global Limited. All rights reserved. <a href="#">CreditHero Terms</a> | <a href="#">Privacy Policy</a></p></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- ══ CHC DASHBOARD V2 (PDPC-COMPLIANT) ══ -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-chc-dashboard-v2">
+    <div class="chc-header">
+      <img class="chc-logo" src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/1_moneyhero_dbd2868f87.svg" alt="MoneyHero">
+      <span class="chc-logout">Logout</span>
+    </div>
+    <div class="dev-note" data-note="chc-dashboard-v2"><strong>PDPC-COMPLIANT VERSION</strong><br>Key changes from original:<br>&#8226; Section title changed from "Recommended Loans Based on Your Credit Report" to neutral marketplace language<br>&#8226; Subtitle no longer references credit data matching<br>&#8226; Filter bar with user-initiated sort (default: popularity, NOT odds)<br>&#8226; "Sort by Approval Odds" is a distinct button the USER clicks &#8212; platform doesn't pre-sort<br>&#8226; Shows 5 most popular products first with "Show More" to see all 59<br>&#8226; Odds column retained as informational (all products shown equally, low odds visible)<br>&#8226; No products are hidden/filtered based on credit data</div>
+
+    <!-- Blue Hero (same as original) -->
+    <div class="chc-hero">
+      <div class="chc-hero-inner">
+        <div class="chc-hero-left">
+          <h2>Hello, FUN FOURTEEN TUCIS</h2>
+          <div class="chc-updated">Last updated: Mar 18, 2026 5:57pm</div>
+          <div class="chc-tu">&#9432; Your credit score is provided by TransUnion</div>
+        </div>
+        <div class="chc-hero-right">
+          <div class="chc-score-row">
+            <div class="chc-score-col">
+              <div class="score-label">Your Credit Score</div>
+              <div class="score-value">2932<span class="decimal">.6000</span></div>
+            </div>
+            <div class="chc-score-col">
+              <div class="score-label">MoneyHero Rating</div>
+              <div class="rating-value">Poor</div>
+            </div>
+          </div>
+          <div class="chc-insight-msg">Your credit grade remains steady &#8212; stability helps build long-term strength.</div>
+          <div class="chc-actions">
+            <button class="chc-btn-teal" onclick="goNext()">Get My Insight</button>
+            <button class="chc-btn-outline">View Full Report</button>
+            <a class="chc-link-teal">See Tips to Improve Credit Score</a>
+          </div>
+        </div>
+      </div>
+      <div class="chc-habits-strip">
+        <span>Build Your Healthy Credit Habits</span>
+        <span style="font-size:18px">&#8594;</span>
+      </div>
+    </div>
+
+    <!-- COMPLIANT Loans Section -->
+    <div class="chc-loans">
+      <h3>Compare Personal Loans in Hong Kong</h3>
+      <p class="subtitle">Compare interest rates, fees, and repayment terms across personal loans. Apply through MoneyHero for exclusive offers.</p>
+      <div class="chc-calc">
+        <div class="calc-input">
+          <label>Loan Amount (HK$)</label>
+          <input type="text" value="180,000" readonly>
+        </div>
+        <div class="calc-input">
+          <label>Tenure (months)</label>
+          <input type="text" value="24" readonly>
+        </div>
+      </div>
+
+      <!-- Filter / Sort Bar -->
+      <div class="v2-filter-bar" id="v2-filter-bar-dashboard">
+        <span class="v2-filter-label">Sort by:</span>
+        <button class="v2-sort-btn active" onclick="v2SetSort('popularity',this,'dashboard')">&#11088; Most Popular</button>
+        <button class="v2-sort-btn" onclick="v2SetSort('apr',this,'dashboard')">&#8595; Lowest APR</button>
+        <button class="v2-sort-btn" onclick="v2SetSort('reward',this,'dashboard')">&#127873; Highest Reward</button>
+        <button class="v2-sort-btn-odds" onclick="v2SetSort('odds',this,'dashboard')">
+          &#9432; Sort by Approval Odds
+          <span class="v2-badge-new">NEW</span>
+        </button>
+      </div>
+
+      <div class="v2-results-count">Showing <strong id="v2-dash-count">5</strong> of <strong>59</strong> personal loans &#8226; Sorted by: <strong id="v2-sort-label-dashboard">Most Popular</strong></div>
+
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table class="chc-loan-table">
+          <thead>
+            <tr>
+              <th>Loan</th>
+              <th class="odds-col">&#25209;&#26680;&#27231;&#26371; <span class="tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></th>
+              <th>APR</th>
+              <th>Monthly Repayment</th>
+              <th class="reward-col">MoneyHero Reward</th>
+              <th>Total Interest</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="v2-loan-tbody">
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_bltd5bc304e27d1f2ec_2daddc24b3.webp" alt=""></div>Citi &#29305;&#24555;&#29694;&#37329;&#31169;&#20154;&#36024;&#27454;</div></td>
+              <td class="odds-td"><span class="odds-badge high">&#39640;</span></td>
+              <td>1.40%</td>
+              <td>HK$ 8,459</td>
+              <td class="reward-cell">HK$6,088</td>
+              <td>HK$ 3,024</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xlarge_blt9b38cc40f974e6de_213f8726eb.webp" alt=""></div>CreFIT Cash Loan</div></td>
+              <td class="odds-td"><span class="odds-badge high">&#39640;</span></td>
+              <td>1.38%</td>
+              <td>HK$ 7,608</td>
+              <td class="reward-cell">HK$23,200</td>
+              <td>HK$ 2,588</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/large_blt23057d4748878759_590c2706f9.webp" alt=""></div>OCBC &#33775;&#20689;&#37504;&#34892;&#12300;&#38646;&#24687;&#31237;&#36024;&#12301;</div></td>
+              <td class="odds-td"><span class="odds-badge low">&#20302;</span></td>
+              <td>1.38%</td>
+              <td>HK$ 8,573</td>
+              <td class="reward-cell">HK$5,888</td>
+              <td>HK$ 0</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xlarge_blt85d396e2e90b641d_88c6c1e85e.webp" alt=""></div>&#37030;&#27665; &#29305;&#24555;&#20302;&#24687;&#36024;&#27454;</div></td>
+              <td class="odds-td"><span class="odds-badge high">&#39640;</span></td>
+              <td>1.12%</td>
+              <td>HK$ 7,590</td>
+              <td style="color:#ccc;text-align:center">&#8212;</td>
+              <td>HK$ 2,160</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/small_blt75b294817c4dec42_311ad151c0.webp" alt=""></div>&#28377;&#35920;&#31237;&#23395;&#20998;&#26399;&#12300;&#33836;&#25033;&#37666;&#12301;</div></td>
+              <td class="odds-td"><span class="odds-badge low">&#20302;</span></td>
+              <td>6.28%</td>
+              <td>HK$ 8,873</td>
+              <td class="reward-cell">HK$1,100</td>
+              <td>HK$ 12,960</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+          </tbody>
+          <tbody id="v2-loan-more" style="display:none">
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_blta2b1c7656f55bafa_2cd3613af9.webp" alt=""></div>WeLend &#31169;&#20154;&#36024;&#27454;</div></td>
+              <td class="odds-td"><span class="odds-badge high">&#39640;</span></td>
+              <td>1.00%</td>
+              <td>HK$ 8,495</td>
+              <td class="reward-cell">HK$3,600</td>
+              <td>HK$ 3,888</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_blt79d486a21f7098a1_824ca9b71f.webp" alt=""></div>&#28195;&#25171;&#37504;&#34892; &#31169;&#20154;&#36024;&#27454;</div></td>
+              <td class="odds-td"><span class="odds-badge medium">&#20013;</span></td>
+              <td>1.85%</td>
+              <td>HK$ 8,499</td>
+              <td class="reward-cell">HK$3,000</td>
+              <td>HK$ 3,984</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+            <tr>
+              <td><div class="loan-provider"><div class="loan-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_blt4351440a848723f8_4955301d54.webp" alt=""></div>PrimeCredit Fixed Loan</div></td>
+              <td class="odds-td"><span class="odds-badge medium">&#20013;</span></td>
+              <td>1.18%</td>
+              <td>HK$ 7,590</td>
+              <td class="reward-cell">HK$18,000</td>
+              <td>HK$ 2,160</td>
+              <td><button class="btn-apply-sm">Apply</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Show More Button -->
+      <button class="v2-show-more" id="v2-show-more-btn" onclick="v2ToggleMore()">
+        <span id="v2-show-more-text">Show all 59 products</span>
+        <span class="v2-show-more-arrow" id="v2-show-more-arrow">&#9660;</span>
+      </button>
+
+      <!-- Product Detail Cards -->
+      <div class="cards-section"><div class="cards-section-title">Product Details <span class="count-badge">5</span></div>
+
+        <!-- 1. Citi -->
+        <div class="product-card">
+          <div class="card-header">
+            <div class="card-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xsmall_bltd5bc304e27d1f2ec_2daddc24b3.webp" alt="" loading="lazy"></div>
+            <div class="card-header-info">
+              <div class="card-product-name">Citi &#29305;&#24555;&#29694;&#37329;&#31169;&#20154;&#36024;&#27454;</div>
+              <div class="card-tags"><span class="card-tag exclusive">&#20840;&#22478;&#26368;&#39640;&#20778;&#24800;</span></div>
+              <div class="card-reward-line">&#127873; MoneyHero &#29518;&#36062;&#39640;&#36948; HK$6,088</div>
+            </div>
+            <div class="card-header-apply"><button class="btn-apply">&#31435;&#21363;&#30003;&#35531;</button></div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat"><div class="stat-label">&#27599;&#26376;&#36996;&#27454;&#38989;&#20302;&#33267;</div><div class="stat-value">HK$8,459</div></div>
+            <div class="card-stat"><div class="stat-label">&#32317;&#21033;&#24687;&#20302;&#33267;</div><div class="stat-value">HK$3,024</div></div>
+            <div class="card-stat"><div class="stat-label">&#26368;&#20302;&#23526;&#38555;&#24180;&#21033;&#29575;</div><div class="stat-value">1.40%</div></div>
+            <div class="card-stat"><div class="stat-label">&#25163;&#32396;&#36027;&#20302;&#33267;</div><div class="stat-value">0%</div></div>
+          </div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-accordions">
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero&#29518;&#36062;&#20729;&#20540; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">&#39640;&#36948; HK$6,088 &#29518;&#36062;</span></div><p style="font-size:12px;color:#666">&#36879;&#36942; MoneyHero &#25104;&#21151;&#30003;&#35531;&#21487;&#29554;&#29518;&#36062;&#12290;&#21463;&#26781;&#27454;&#21450;&#32048;&#21063;&#32004;&#26463;&#12290;</p></div></div></div>
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#30003;&#35531;&#27493;&#39519; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><ol class="card-steps"><li>&#40670;&#25802;&#12300;&#31435;&#21363;&#30003;&#35531;&#12301;&#21069;&#24448;&#37504;&#34892;&#32178;&#31449;</li><li>&#22635;&#23531;&#30003;&#35531;&#34920;&#26684;&#21450;&#19978;&#20659;&#25152;&#38656;&#25991;&#20214;</li><li>&#37504;&#34892;&#23529;&#25209;&#21450;&#36890;&#30693;&#32080;&#26524;</li></ol></div></div></div>
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#29986;&#21697;&#36039;&#35338; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p style="font-size:13px;color:#555;line-height:1.7">&#24180;&#40801;&#35201;&#27714;&#65306;18&#27506;&#25110;&#20197;&#19978;<br>&#26368;&#20302;&#24180;&#34218;&#35201;&#27714;&#65306;HK$60,000<br>&#30003;&#35531;&#20154;&#38920;&#28858;&#39321;&#28207;&#23621;&#27665;</p></div></div></div>
+          </div>
+        </div>
+
+        <!-- 2. CreFIT -->
+        <div class="product-card">
+          <div class="card-header">
+            <div class="card-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xlarge_blt9b38cc40f974e6de_213f8726eb.webp" alt="" loading="lazy"></div>
+            <div class="card-header-info">
+              <div class="card-product-name">CreFIT Cash Loan</div>
+              <div class="card-tags"><span class="card-tag fast">&#29305;&#24555;&#25209;&#26680;</span></div>
+              <div class="card-reward-line">&#127873; MoneyHero &#29518;&#36062;&#39640;&#36948; HK$23,200</div>
+            </div>
+            <div class="card-header-apply"><button class="btn-apply">&#31435;&#21363;&#30003;&#35531;</button></div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat"><div class="stat-label">&#27599;&#26376;&#36996;&#27454;&#38989;&#20302;&#33267;</div><div class="stat-value">HK$7,608</div></div>
+            <div class="card-stat"><div class="stat-label">&#32317;&#21033;&#24687;&#20302;&#33267;</div><div class="stat-value">HK$2,588</div></div>
+            <div class="card-stat"><div class="stat-label">&#26368;&#20302;&#23526;&#38555;&#24180;&#21033;&#29575;</div><div class="stat-value">1.38%</div></div>
+            <div class="card-stat"><div class="stat-label">&#25163;&#32396;&#36027;&#20302;&#33267;</div><div class="stat-value">0%</div></div>
+          </div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-accordions">
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero&#29518;&#36062;&#20729;&#20540; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">&#39640;&#36948; HK$23,200 &#29518;&#36062;</span></div><p style="font-size:12px;color:#666">&#36879;&#36942; MoneyHero &#25104;&#21151;&#30003;&#35531;&#21487;&#29554;&#29518;&#36062;&#12290;&#21463;&#26781;&#27454;&#21450;&#32048;&#21063;&#32004;&#26463;&#12290;</p></div></div></div>
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#29986;&#21697;&#36039;&#35338; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p style="font-size:13px;color:#555;line-height:1.7">&#24180;&#40801;&#35201;&#27714;&#65306;18&#27506;&#25110;&#20197;&#19978;<br>&#26368;&#20302;&#24180;&#34218;&#35201;&#27714;&#65306;HK$60,000</p></div></div></div>
+          </div>
+        </div>
+
+        <!-- Show More Cards Button -->
+        <button class="v2-show-more" id="v2-show-more-cards-btn" onclick="v2ToggleMoreCards()">
+          <span id="v2-show-more-cards-text">Show 3 more product details</span>
+          <span class="v2-show-more-arrow" id="v2-show-more-cards-arrow">&#9660;</span>
+        </button>
+
+        <div id="v2-more-cards" style="display:none">
+        <!-- 3. OCBC (low odds &#8212; visible because sorted by popularity) -->
+        <div class="product-card">
+          <div class="card-header">
+            <div class="card-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/large_blt23057d4748878759_590c2706f9.webp" alt="" loading="lazy"></div>
+            <div class="card-header-info">
+              <div class="card-product-name">OCBC &#33775;&#20689;&#37504;&#34892;&#12300;&#38646;&#24687;&#31237;&#36024;&#12301;</div>
+              <div class="card-tags"><span class="card-tag tax">&#31237;&#23395;&#36024;&#27454;</span></div>
+              <div class="card-reward-line">&#127873; MoneyHero &#29518;&#36062;&#39640;&#36948; HK$5,888</div>
+            </div>
+            <div class="card-header-apply"><button class="btn-apply">&#31435;&#21363;&#30003;&#35531;</button></div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat"><div class="stat-label">&#27599;&#26376;&#36996;&#27454;&#38989;&#20302;&#33267;</div><div class="stat-value">HK$8,573</div></div>
+            <div class="card-stat"><div class="stat-label">&#32317;&#21033;&#24687;&#20302;&#33267;</div><div class="stat-value">HK$0</div></div>
+            <div class="card-stat"><div class="stat-label">&#26368;&#20302;&#23526;&#38555;&#24180;&#21033;&#29575;</div><div class="stat-value">1.38%</div></div>
+            <div class="card-stat"><div class="stat-label">&#25163;&#32396;&#36027;&#20302;&#33267;</div><div class="stat-value">HK$5,760</div></div>
+          </div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge low">&#20302;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-accordions">
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero&#29518;&#36062;&#20729;&#20540; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">&#39640;&#36948; HK$5,888 &#29518;&#36062;</span></div></div></div></div>
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#29986;&#21697;&#36039;&#35338; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p style="font-size:13px;color:#555;line-height:1.7">&#24180;&#40801;&#35201;&#27714;&#65306;18&#27506;&#25110;&#20197;&#19978;<br>&#30003;&#35531;&#20154;&#38920;&#28858;&#39321;&#28207;&#23621;&#27665;</p></div></div></div>
+          </div>
+        </div>
+
+        <!-- 4. &#37030;&#27665; -->
+        <div class="product-card">
+          <div class="card-header">
+            <div class="card-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/xlarge_blt85d396e2e90b641d_88c6c1e85e.webp" alt="" loading="lazy"></div>
+            <div class="card-header-info">
+              <div class="card-product-name">&#37030;&#27665; &#29305;&#24555;&#20302;&#24687;&#36024;&#27454;</div>
+              <div class="card-tags"><span class="card-tag fast">&#29305;&#24555;&#25209;&#26680;</span></div>
+              <div class="card-reward-line">&#127873; MoneyHero &#29518;&#36062;&#39640;&#36948; HK$4,000</div>
+            </div>
+            <div class="card-header-apply"><button class="btn-apply">&#31435;&#21363;&#30003;&#35531;</button></div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat"><div class="stat-label">&#27599;&#26376;&#36996;&#27454;&#38989;&#20302;&#33267;</div><div class="stat-value">HK$7,590</div></div>
+            <div class="card-stat"><div class="stat-label">&#32317;&#21033;&#24687;&#20302;&#33267;</div><div class="stat-value">HK$2,160</div></div>
+            <div class="card-stat"><div class="stat-label">&#26368;&#20302;&#23526;&#38555;&#24180;&#21033;&#29575;</div><div class="stat-value">1.12%</div></div>
+            <div class="card-stat"><div class="stat-label">&#25163;&#32396;&#36027;&#20302;&#33267;</div><div class="stat-value">0%</div></div>
+          </div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-accordions">
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero&#29518;&#36062;&#20729;&#20540; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">&#39640;&#36948; HK$4,000 &#29518;&#36062;</span></div></div></div></div>
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#29986;&#21697;&#36039;&#35338; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p style="font-size:13px;color:#555;line-height:1.7">&#24180;&#40801;&#35201;&#27714;&#65306;18&#27506;&#25110;&#20197;&#19978;<br>&#30003;&#35531;&#20154;&#38920;&#28858;&#39321;&#28207;&#23621;&#27665;</p></div></div></div>
+          </div>
+        </div>
+
+        <!-- 5. HSBC (low odds &#8212; visible because popularity sort) -->
+        <div class="product-card">
+          <div class="card-header">
+            <div class="card-logo"><img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/small_blt75b294817c4dec42_311ad151c0.webp" alt="" loading="lazy"></div>
+            <div class="card-header-info">
+              <div class="card-product-name">&#28377;&#35920;&#31237;&#23395;&#20998;&#26399;&#12300;&#33836;&#25033;&#37666;&#12301;</div>
+              <div class="card-tags"><span class="card-tag tax">&#31237;&#23395;&#36024;&#27454;</span></div>
+              <div class="card-reward-line">&#127873; MoneyHero &#29518;&#36062;&#39640;&#36948; HK$1,100</div>
+            </div>
+            <div class="card-header-apply"><button class="btn-apply">&#31435;&#21363;&#30003;&#35531;</button></div>
+          </div>
+          <div class="card-stats">
+            <div class="card-stat"><div class="stat-label">&#27599;&#26376;&#36996;&#27454;&#38989;&#20302;&#33267;</div><div class="stat-value">HK$8,873</div></div>
+            <div class="card-stat"><div class="stat-label">&#32317;&#21033;&#24687;&#20302;&#33267;</div><div class="stat-value">HK$12,960</div></div>
+            <div class="card-stat"><div class="stat-label">&#26368;&#20302;&#23526;&#38555;&#24180;&#21033;&#29575;</div><div class="stat-value">6.28%</div></div>
+            <div class="card-stat"><div class="stat-label">&#25163;&#32396;&#36027;&#20302;&#33267;</div><div class="stat-value">0%</div></div>
+          </div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge low">&#20302;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-accordions">
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero&#29518;&#36062;&#20729;&#20540; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">&#39640;&#36948; HK$1,100 &#29518;&#36062;</span></div></div></div></div>
+            <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#29986;&#21697;&#36039;&#35338; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p style="font-size:13px;color:#555;line-height:1.7">&#24180;&#40801;&#35201;&#27714;&#65306;18&#27506;&#25110;&#20197;&#19978;<br>&#26368;&#20302;&#24180;&#34218;&#35201;&#27714;&#65306;HK$60,000</p></div></div></div>
+          </div>
+        </div>
+
+      </div><!-- /v2-more-cards -->
+      </div><!-- /cards-section -->
+
+      <!-- Tips -->
+      <h3 class="chc-section-title">Tips to Improve Your Credit Score</h3>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>Always pay your bills on time</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">Payment history is one of the biggest factors in your credit score. Set up automatic payments or calendar reminders to ensure you never miss a due date.</div></div></div>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>Keep your credit card balances low</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">Try to keep your credit utilisation ratio below 30%. Lower utilisation shows lenders you're managing credit responsibly.</div></div></div>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>Avoid applying for too many credit products at once</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">Each credit application generates a hard inquiry on your report. Multiple inquiries in a short period can lower your score.</div></div></div>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>Check your credit report regularly</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">Regular monitoring helps you spot errors or fraudulent activity early.</div></div></div>
+
+      <h3 class="chc-section-title">Need Some Help?</h3>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>What will my information be used for?</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">Your information is used to retrieve your credit report from TransUnion and to provide credit health insights. We handle all data in accordance with our privacy policy.</div></div></div>
+      <div class="chc-accordion"><div class="chc-accordion-header" onclick="toggleAccordion(this)"><span>How do you protect my personal data?</span><span class="acc-chevron">&#9660;</span></div><div class="chc-accordion-body"><div class="chc-accordion-content">We use industry-standard security measures including encryption, secure data storage, and access controls.</div></div></div>
+
+      <div class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">Back To Top &#8593;</div>
+    </div>
+
+    <div class="chc-footer-cta">
+      <h3>Ready for Your Deep Dive?</h3>
+      <div class="cta-btns">
+        <button class="btn-cta-teal" onclick="goNext()">Get My Insight</button>
+        <button class="btn-cta-outline">View Full Report</button>
+      </div>
+    </div>
+    <div class="chc-disclaimer"><p>Disclaimer: CreditHero is owned and operated by MoneyHero Global Limited ("MoneyHero"). MoneyHero makes every effort to keep information on our website accurate and up-to-date. All financial products and services are presented without warranty.</p></div>
+    <div class="chc-copyright"><p>&copy; 2013-2026 MoneyHero Global Limited. All rights reserved. <a href="#">CreditHero Terms</a> | <a href="#">Privacy Policy</a></p></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- ══ PL COMPLIANT RESULTS PAGE ══ -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-pl-compliant">
+    <div class="site-header">
+      <div class="hamburger">&#9776;</div>
+      <img class="logo-img" src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/1_moneyhero_dbd2868f87.svg" alt="MoneyHero">
+      <div class="header-nav">
+        <a href="#">&#20449;&#29992;&#21345;</a>
+        <a href="#" class="active-link">&#31169;&#20154;&#36024;&#27454;</a>
+        <a href="#">&#20445;&#38570;</a>
+        <a href="#">&#25353;&#25581;</a>
+        <a href="#">&#37504;&#34892;&#25142;&#21475;</a>
+      </div>
+      <div class="user-icon">&#128100;</div>
+    </div>
+    <div class="breadcrumb"><a href="#">&#127968; &#39318;&#38913;</a><span>/</span><a href="#">&#31169;&#20154;&#36024;&#27454;</a><span>/</span>&#12304;&#20511;&#36024;2026&#12305;&#21363;&#30572;&#29305;&#24555;&#25209;&#26680;&#31169;&#20154;&#36024;&#27454;&#21033;&#24687;&#21450;...</div>
+    <div class="page-heading">
+      <h1>&#12304;&#20511;&#36024;2026&#12305;&#21363;&#30572;&#29305;&#24555;&#25209;&#26680;&#31169;&#20154;&#36024;&#27454;&#21033;&#24687;&#21450;&#20511;&#37666;&#20778;&#24800;</h1>
+      <div class="updated-date">&#26356;&#26032;&#26085;&#26399;: 2026&#24180;3&#26376;6&#26085;</div>
+      <div class="description">&#31169;&#20154;&#36024;&#27454;&#65288;P Loan&#65289;&#21450;&#20302;&#24687;&#36024;&#27454;&#27604;&#36611;&#65306;&#31169;&#20154;&#36024;&#27454;&#37002;&#38291;&#22909;&#65311;&#36024;&#27454;&#20778;&#24800; / &#21033;&#24687; / &#21033;&#29575;&#36024;&#27454;&#27604;&#36611; | &#31169;&#20154;&#36024;...<span class="show-more">&#39023;&#31034;&#26356;&#22810;</span></div>
+    </div>
+    <div class="container">
+      <div class="why-mh">
+        <img src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/1_moneyhero_dbd2868f87.svg" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:contain;background:#fff;border:1px solid #eee;padding:2px">
+        &#28858;&#20160;&#40636;&#36879;&#36942; MoneyHero &#30003;&#35531;&#36024;&#27454;&#65311;
+        <span class="arrow">&#9660;</span>
+      </div>
+      <div class="dev-note" data-note="pl-compliant"><strong>PDPC-COMPLIANT PL RESULTS PAGE</strong><br>Key compliance changes from original PL page:<br>&#8226; Filter/sort bar added &#8212; default sort is "Most Popular" (not approval odds)<br>&#8226; "Sort by Approval Odds" is user-initiated with NEW badge to draw attention<br>&#8226; ALL 59 products shown (not filtered by credit profile)<br>&#8226; Show first 5, then "Show all 59 products" button<br>&#8226; Odds banner is informational: "shown for reference" language, not "sorted by"<br>&#8226; No products hidden based on low approval odds<br>&#8226; This avoids "solely automated decision-making" under PDPO s.64</div>
+      <div class="tabs">
+        <div class="tab active">&#20840;&#37096;&#36024;&#27454;</div><div class="tab">&#128196; &#31237;&#23395;&#36024;&#27454;</div><div class="tab">&#11088; &#31934;&#36984;&#36024;&#27454;</div><div class="tab">&#127974; &#36001;&#21209;&#20844;&#21496;</div><div class="tab">&#127970; &#37504;&#34892;&#36024;&#27454;</div><div class="tab">&#32080;&#39192;&#36681;&#25142;</div><div class="tab">&#20302;&#24687;&#36024;&#27454;</div>
+      </div>
+      <div class="quick-summary"><span>+</span>&#12300;&#24555;&#36895;&#25688;&#35201;&#12301;</div>
+      <div class="calc-row">
+        <div class="calc-field"><label>&#36024;&#27454;&#38989; (HK$) <span class="info-sm">i</span></label><input type="text" value="200,000" readonly></div>
+        <div class="calc-field"><label>&#36996;&#27454;&#26399; (&#26376;) <span class="info-sm">i</span></label><input type="text" value="24" readonly></div>
+      </div>
+
+      <!-- Informational Odds Banner -->
+      <div class="odds-banner informational"><span class="icon">&#9432;</span><div>Your approval odds are shown for reference based on your credit profile. All products are displayed regardless of your approval likelihood.</div></div>
+
+      <!-- Filter / Sort Bar -->
+      <div class="v2-filter-bar" id="v2-filter-bar-pl">
+        <span class="v2-filter-label">Sort by:</span>
+        <button class="v2-sort-btn active" onclick="v2SetSort('popularity',this,'pl')">&#11088; Most Popular</button>
+        <button class="v2-sort-btn" onclick="v2SetSort('apr',this,'pl')">&#8595; Lowest APR</button>
+        <button class="v2-sort-btn" onclick="v2SetSort('reward',this,'pl')">&#127873; Highest Reward</button>
+        <button class="v2-sort-btn-odds" onclick="v2SetSort('odds',this,'pl')">
+          &#9432; Sort by Approval Odds
+          <span class="v2-badge-new">NEW</span>
+        </button>
+      </div>
+
+      <div class="v2-results-count">Showing <strong id="pl-show-count">5</strong> of <strong>59</strong> &#20491;&#36024;&#27454;&#29986;&#21697; &#8226; Sorted by: <strong id="v2-sort-label-pl">Most Popular</strong></div>
+
+      <!-- Product Table -->
+      <div class="product-table"><div class="product-table-inner">
+        <div class="table-header">
+          <div>&#37504;&#34892; / &#36001;&#21209;&#20844;&#21496;</div>
+          <div class="col-odds-header">&#25209;&#26680;&#27231;&#26371; <span class="tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></div>
+          <div>&#23526;&#38555;&#24180;&#21033;&#29575;</div>
+          <div>&#27599;&#26376;&#36996;&#27454;</div>
+          <div>&#32317;&#21033;&#24687;&#25903;&#20986;</div>
+          <div>MoneyHero &#29544;&#23478;</div>
+          <div></div>
+        </div>
+        <div id="pl-compliant-products"></div>
+        <div id="pl-compliant-more-products" style="display:none"></div>
+      </div></div>
+
+      <!-- Show More Button for table -->
+      <button class="v2-show-more" id="pl-show-more-btn" onclick="plToggleMore()">
+        <span id="pl-show-more-text">Show all 59 products</span>
+        <span class="v2-show-more-arrow" id="pl-show-more-arrow">&#9660;</span>
+      </button>
+
+      <!-- Product Cards -->
+      <div class="cards-section">
+        <div class="cards-section-title">&#29986;&#21697;&#35443;&#24773; <span class="count-badge">8</span></div>
+        <div id="pl-compliant-cards"></div>
+        <button class="v2-show-more" id="pl-show-more-cards-btn" onclick="plToggleMoreCards()">
+          <span id="pl-show-more-cards-text">Show 6 more product details</span>
+          <span class="v2-show-more-arrow" id="pl-show-more-cards-arrow">&#9660;</span>
+        </button>
+        <div id="pl-compliant-more-cards" style="display:none"></div>
+      </div>
+    </div>
+    <div class="footer"><p>Prototype &#8212; CHC Compliance Prototype | MoneyHero HK | 2026-03-19</p></div>
+  </div>
+
+</div><!-- /screen-container -->
+
+<!-- Floating Tooltip -->
+<div class="floating-tooltip" id="floating-tooltip">&#25209;&#26680;&#27231;&#26371;&#26681;&#25818;&#33287;&#24744;&#30456;&#20284;&#20449;&#36024;&#29376;&#27841;&#30340;&#29992;&#25142;&#25976;&#25818;&#20272;&#31639;&#65292;&#20677;&#20379;&#21443;&#32771;&#65292;&#19981;&#20445;&#35657;&#29554;&#25209;&#25110;&#34987;&#25298;&#12290;</div>
+
+<!-- Navigation -->
+<div class="nav-bar" id="nav-bar">
+  <button class="nav-btn" id="btn-prev" onclick="goPrev()">&#8592; Previous</button>
+  <span id="nav-counter" style="font-size:12px;color:#888"></span>
+  <button class="nav-btn primary" id="btn-next" onclick="goNext()">Next &#8594;</button>
+</div>
+
+</div><!-- /app-content -->
+
+<script>
+// ── Auth ──
+function simpleHash(s){var h=0;for(var i=0;i<s.length;i++){h=((h<<5)-h+s.charCodeAt(i))|0}return(h>>>0).toString(16).padStart(8,'0')}
+var EXPECTED=simpleHash('chc-moneyhero');
+function checkPassword(){
+  var input=document.getElementById('gate-input'),err=document.getElementById('gate-error');
+  if(simpleHash(input.value)===EXPECTED){
+    document.getElementById('password-gate').classList.add('hidden');
+    document.getElementById('app-content').classList.add('visible');
+    sessionStorage.setItem('proto-auth-github','1');
+    loadScenario('compare');
+  } else {
+    input.classList.add('error');err.textContent='Incorrect password';
+    setTimeout(function(){input.classList.remove('error');err.textContent=''},1500);
+  }
+}
+document.addEventListener('DOMContentLoaded',function(){
+  if(sessionStorage.getItem('proto-auth-github')==='1'){
+    document.getElementById('password-gate').classList.add('hidden');
+    document.getElementById('app-content').classList.add('visible');
+    loadScenario('compare');
+  }
+  document.getElementById('gate-input').addEventListener('keydown',function(e){if(e.key==='Enter')checkPassword()});
+  renderPLCompliantProducts();
+});
+
+// ── PL Product Data ──
+var CDN='https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/';
+var plProducts=[
+  {name:'Citi \u7279\u5feb\u73fe\u91d1\u79c1\u4eba\u8cb8\u6b3e',logo:CDN+'xsmall_bltd5bc304e27d1f2ec_2daddc24b3.webp',monthly:'HK$8,459',interest:'HK$3,024',apr:'1.40%',reward:'HK$6,088',fee:'0%',tag:'\u5168\u57ce\u6700\u9ad8\u512a\u60e0',tagClass:'exclusive',odds:'high'},
+  {name:'WeLend \u79c1\u4eba\u8cb8\u6b3e',logo:CDN+'xsmall_blta2b1c7656f55bafa_2cd3613af9.webp',monthly:'HK$8,495',interest:'HK$3,888',apr:'1.00%',reward:'HK$3,600',fee:'0%',tag:'\u5168\u57ce\u6700\u9ad8\u512a\u60e0',tagClass:'exclusive',odds:'high'},
+  {name:'\u6e23\u6253\u9280\u884c \u79c1\u4eba\u8cb8\u6b3e',logo:CDN+'xsmall_blt79d486a21f7098a1_824ca9b71f.webp',monthly:'HK$8,499',interest:'HK$3,984',apr:'1.85%',reward:'HK$3,000',fee:'0%',tag:'0%\u624b\u7e8c\u8cbb',tagClass:'',odds:'medium'},
+  {name:'\u5b89\u4fe1 \u5b9a\u984d\u79c1\u4eba\u8cb8\u6b3e',logo:CDN+'xsmall_blt4351440a848723f8_4955301d54.webp',monthly:'HK$8,433',interest:'HK$2,400',apr:'1.18%',reward:'HK$18,000',fee:'0%',tag:'\u6025\u6551\u4e4b\u9078',tagClass:'fast',odds:'high'},
+  {name:'\u90a6\u6c11 \u7279\u5feb\u4f4e\u606f\u8cb8\u6b3e',logo:CDN+'xlarge_blt85d396e2e90b641d_88c6c1e85e.webp',monthly:'HK$8,433',interest:'HK$2,400',apr:'1.12%',reward:'HK$4,000',fee:'0%',tag:'\u7279\u5feb\u6279\u6838',tagClass:'fast',odds:'high'},
+  {name:'OCBC \u83ef\u50d1\u9280\u884c\u300c\u96f6\u606f\u7a05\u8cb8\u300d',logo:CDN+'large_blt23057d4748878759_590c2706f9.webp',monthly:'HK$8,573',interest:'HK$0',apr:'1.38%',reward:'HK$5,888',fee:'0%',tag:'\u7a05\u5b63\u8cb8\u6b3e',tagClass:'tax',odds:'low'},
+  {name:'\u4fe1\u9280\u570b\u969b $mart Plus \u5206\u671f\u8cb8\u6b3e',logo:CDN+'large_CNCBI_b1b80c54d9.jpeg',monthly:'HK$8,373',interest:'HK$960',apr:'1.38%',reward:'HK$2,388',fee:'0%',tag:'\u7a05\u5b63\u8cb8\u6b3e',tagClass:'tax',odds:'low'},
+  {name:'CreFIT \u73fe\u91d1\u8cb8',logo:CDN+'xlarge_blt9b38cc40f974e6de_213f8726eb.webp',monthly:'HK$8,453',interest:'HK$2,875',apr:'1.38%',reward:'HK$23,200',fee:'0%',tag:'\u7279\u5feb\u6279\u6838',tagClass:'fast',odds:'high'}
+];
+
+// ── Table Row Renderer ──
+function renderProductRow(p){
+  var labels={high:'\u9ad8',medium:'\u4e2d',low:'\u4f4e'};
+  var oddsHTML='<span class="odds-badge '+p.odds+'">'+labels[p.odds]+'</span>';
+  return '<div class="product-row">'+
+    '<div class="provider"><div class="provider-logo"><img src="'+p.logo+'" alt="" loading="lazy"></div><div><div class="provider-name">'+p.name+'</div>'+(p.tag?'<span class="provider-tag '+p.tagClass+'">'+p.tag+'</span>':'')+'<div class="provider-reward">&#127873; \u9ad8\u9054 '+p.reward+' \u734e\u8cde</div></div></div>'+
+    '<div class="odds-cell">'+oddsHTML+'</div>'+
+    '<div class="cell"><div class="value">'+p.apr+'</div><div class="label">\u5be6\u969b\u5e74\u5229\u7387</div></div>'+
+    '<div class="cell"><div class="value">'+p.monthly+'</div><div class="label">\u6bcf\u6708\u9084\u6b3e</div></div>'+
+    '<div class="cell"><div class="value">'+p.interest+'</div><div class="label">\u7e3d\u5229\u606f</div></div>'+
+    '<div class="cell" style="text-align:center"><div class="value" style="color:#e67e00;font-size:14px">'+p.reward+'</div><div class="label">MoneyHero \u7368\u5bb6</div></div>'+
+    '<div style="text-align:right"><button class="btn-apply">\u7acb\u5373\u7533\u8acb</button></div></div>';
+}
+
+// ── Product Card Renderer ──
+function renderProductCard(p){
+  var labels={high:'\u9ad8',medium:'\u4e2d',low:'\u4f4e'};
+  var oddsHTML='<div class="card-odds-banner"><span class="cob-label">\u6279\u6838\u6a5f\u6703 <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge '+p.odds+'">'+labels[p.odds]+'</span></span><span class="cob-meta">\u66f4\u65b0\uff1a2026\u5e743\u670818\u65e5</span></div>';
+  var statsHTML='<div class="card-stats"><div class="card-stat"><div class="stat-label">\u6bcf\u6708\u9084\u6b3e\u984d\u4f4e\u81f3</div><div class="stat-value">'+p.monthly+'</div></div><div class="card-stat"><div class="stat-label">\u7e3d\u5229\u606f\u4f4e\u81f3</div><div class="stat-value">'+p.interest+'</div></div><div class="card-stat"><div class="stat-label">\u6700\u4f4e\u5be6\u969b\u5e74\u5229\u7387</div><div class="stat-value">'+p.apr+'</div></div><div class="card-stat"><div class="stat-label">\u624b\u7e8c\u8cbb\u4f4e\u81f3</div><div class="stat-value">'+p.fee+'</div></div></div>';
+  return '<div class="product-card"><div class="card-header"><div class="card-logo"><img src="'+p.logo+'" alt="" loading="lazy"></div><div class="card-header-info"><div class="card-product-name">'+p.name+'</div><div class="card-tags">'+(p.tag?'<span class="card-tag '+p.tagClass+'">'+p.tag+'</span>':'')+'</div><div class="card-reward-line">&#127873; MoneyHero \u734e\u8cde\u9ad8\u9054 '+p.reward+'</div></div><div class="card-header-apply"><button class="btn-apply">\u7acb\u5373\u7533\u8acb</button></div></div>'+statsHTML+oddsHTML+
+    '<div class="card-accordions"><div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero\u734e\u8cde\u50f9\u503c <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">\u9ad8\u9054 '+p.reward+' \u734e\u8cde</span></div><p style="font-size:12px;color:#666">\u900f\u904e MoneyHero \u6210\u529f\u7533\u8acb\u53ef\u7372\u734e\u8cde\u3002\u53d7\u689d\u6b3e\u53ca\u7d30\u5247\u7d04\u675f\u3002</p></div></div></div>'+
+    '<div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">\u7533\u8acb\u6b65\u9a5f <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><ol class="card-steps"><li>\u9ede\u64ca\u300c\u7acb\u5373\u7533\u8acb\u300d\u524d\u5f80\u9280\u884c\u7db2\u7ad9</li><li>\u586b\u5beb\u7533\u8acb\u8868\u683c\u53ca\u4e0a\u50b3\u6240\u9700\u6587\u4ef6</li><li>\u9280\u884c\u5be9\u6279\u53ca\u901a\u77e5\u7d50\u679c</li></ol></div></div></div>'+
+    '<div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">\u7522\u54c1\u8cc7\u8a0a <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p style="font-size:13px;color:#555;line-height:1.7">\u5e74\u9f61\u8981\u6c42\uff1a18\u6b72\u6216\u4ee5\u4e0a<br>\u6700\u4f4e\u5e74\u85aa\u8981\u6c42\uff1aHK$60,000<br>\u7533\u8acb\u4eba\u9808\u70ba\u9999\u6e2f\u5c45\u6c11</p></div></div></div></div></div>';
+}
+
+function toggleCardAccordion(header){
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+function toggleAccordion(header){
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+// ── Render PL Compliant Products ──
+function renderPLCompliantProducts(){
+  var first5 = plProducts.slice(0, 5);
+  var rest = plProducts.slice(5);
+  var plT = document.getElementById('pl-compliant-products');
+  var plTMore = document.getElementById('pl-compliant-more-products');
+  if(plT) plT.innerHTML = first5.map(function(p){ return renderProductRow(p); }).join('');
+  if(plTMore) plTMore.innerHTML = rest.map(function(p){ return renderProductRow(p); }).join('');
+
+  var first2 = plProducts.slice(0, 2);
+  var restCards = plProducts.slice(2);
+  var plC = document.getElementById('pl-compliant-cards');
+  var plCMore = document.getElementById('pl-compliant-more-cards');
+  if(plC) plC.innerHTML = first2.map(function(p){ return renderProductCard(p); }).join('');
+  if(plCMore) plCMore.innerHTML = restCards.map(function(p){ return renderProductCard(p); }).join('');
+}
+
+// ── v2 Dashboard Filter/Sort ──
+function v2SetSort(sortType, btn, context){
+  var bar = btn.parentElement;
+  var allBtns = bar.querySelectorAll('.v2-sort-btn, .v2-sort-btn-odds');
+  for(var i=0;i<allBtns.length;i++) allBtns[i].classList.remove('active');
+  btn.classList.add('active');
+  var labels = {popularity:'Most Popular', apr:'Lowest APR', reward:'Highest Reward', odds:'Approval Odds'};
+  var labelEl = document.getElementById('v2-sort-label-' + context);
+  if(labelEl) labelEl.textContent = labels[sortType] || sortType;
+}
+
+// ── v2 Dashboard Show More (table rows) ──
+var v2Expanded = false;
+function v2ToggleMore(){
+  v2Expanded = !v2Expanded;
+  var moreRows = document.getElementById('v2-loan-more');
+  var btn = document.getElementById('v2-show-more-btn');
+  var text = document.getElementById('v2-show-more-text');
+  var arrow = document.getElementById('v2-show-more-arrow');
+  var count = document.getElementById('v2-dash-count');
+  if(moreRows) moreRows.style.display = v2Expanded ? 'table-row-group' : 'none';
+  if(btn) btn.classList.toggle('expanded', v2Expanded);
+  if(text) text.textContent = v2Expanded ? 'Show fewer products' : 'Show all 59 products';
+  if(arrow) arrow.innerHTML = v2Expanded ? '&#9650;' : '&#9660;';
+  if(count) count.textContent = v2Expanded ? '8' : '5';
+}
+
+// ── v2 Dashboard Show More (cards) ──
+var v2CardsExpanded = false;
+function v2ToggleMoreCards(){
+  v2CardsExpanded = !v2CardsExpanded;
+  var moreCards = document.getElementById('v2-more-cards');
+  var btn = document.getElementById('v2-show-more-cards-btn');
+  var text = document.getElementById('v2-show-more-cards-text');
+  var arrow = document.getElementById('v2-show-more-cards-arrow');
+  if(moreCards) moreCards.style.display = v2CardsExpanded ? 'block' : 'none';
+  if(btn) btn.classList.toggle('expanded', v2CardsExpanded);
+  if(text) text.textContent = v2CardsExpanded ? 'Show fewer product details' : 'Show 3 more product details';
+  if(arrow) arrow.innerHTML = v2CardsExpanded ? '&#9650;' : '&#9660;';
+}
+
+// ── PL Compliant Show More (table rows) ──
+var plExpanded = false;
+function plToggleMore(){
+  plExpanded = !plExpanded;
+  var moreRows = document.getElementById('pl-compliant-more-products');
+  var btn = document.getElementById('pl-show-more-btn');
+  var text = document.getElementById('pl-show-more-text');
+  var arrow = document.getElementById('pl-show-more-arrow');
+  var count = document.getElementById('pl-show-count');
+  if(moreRows) moreRows.style.display = plExpanded ? 'block' : 'none';
+  if(btn) btn.classList.toggle('expanded', plExpanded);
+  if(text) text.textContent = plExpanded ? 'Show fewer products' : 'Show all 59 products';
+  if(arrow) arrow.innerHTML = plExpanded ? '&#9650;' : '&#9660;';
+  if(count) count.textContent = plExpanded ? '8' : '5';
+}
+
+// ── PL Compliant Show More (cards) ──
+var plCardsExpanded = false;
+function plToggleMoreCards(){
+  plCardsExpanded = !plCardsExpanded;
+  var moreCards = document.getElementById('pl-compliant-more-cards');
+  var btn = document.getElementById('pl-show-more-cards-btn');
+  var text = document.getElementById('pl-show-more-cards-text');
+  var arrow = document.getElementById('pl-show-more-cards-arrow');
+  if(moreCards) moreCards.style.display = plCardsExpanded ? 'block' : 'none';
+  if(btn) btn.classList.toggle('expanded', plCardsExpanded);
+  if(text) text.textContent = plCardsExpanded ? 'Show fewer product details' : 'Show 6 more product details';
+  if(arrow) arrow.innerHTML = plCardsExpanded ? '&#9650;' : '&#9660;';
+}
+
+// ══════════════════════════════════════
+// ── SCENARIO DEFINITIONS ──
+// ══════════════════════════════════════
+var stepMeta = {
+  'chc-dashboard':    {title:'CHC Dashboard (Original)', desc:'Original non-compliant version \u2014 products filtered/sorted by credit profile, no user-initiated sort'},
+  'chc-dashboard-v2': {title:'CHC Dashboard (Compliant v2)', desc:'PDPC-compliant: neutral title, user-initiated sort, show 5 most popular with show-more, odds as informational'},
+  'pl-compliant':     {title:'PL Results (Compliant)', desc:'MoneyHero PL page with compliant filter bar, all products shown, odds as informational reference'}
+};
+
+var scenarios = {
+  'compare':      {name:'Compare: Original vs Compliant Dashboard', steps:['chc-dashboard','chc-dashboard-v2']},
+  'compliant-pl': {name:'Compliant PL Results Page', steps:['chc-dashboard-v2','pl-compliant']},
+  'full':         {name:'Full Compliant Journey', steps:['chc-dashboard-v2','pl-compliant']}
+};
+
+var currentScenario = 'compare';
+var currentStepIndex = 0;
+var devNotesVisible = false;
+
+function loadScenario(id){
+  currentScenario = id;
+  currentStepIndex = 0;
+  document.getElementById('scenario-picker').value = id;
+  renderStepPills();
+  showStep(0);
+}
+
+function renderStepPills(){
+  var sc = scenarios[currentScenario];
+  var container = document.getElementById('step-pills');
+  var html = '';
+  for(var i=0;i<sc.steps.length;i++){
+    var meta = stepMeta[sc.steps[i]];
+    var shortLabel = meta.title.substring(0, 30);
+    html += '<button class="step-pill'+(i===currentStepIndex?' active':'')+'" onclick="showStep('+i+')">'+(i+1)+'. '+shortLabel+'</button>';
+  }
+  container.innerHTML = html;
+}
+
+function showStep(index){
+  var sc = scenarios[currentScenario];
+  if(index < 0 || index >= sc.steps.length) return;
+  currentStepIndex = index;
+  var stepId = sc.steps[index];
+  var meta = stepMeta[stepId];
+
+  var screens = document.querySelectorAll('.screen');
+  for(var i=0;i<screens.length;i++) screens[i].classList.remove('active');
+  var target = document.getElementById('screen-' + stepId);
+  if(target) target.classList.add('active');
+
+  document.getElementById('step-num').textContent = index + 1;
+  document.getElementById('step-title').textContent = meta.title;
+  document.getElementById('step-desc').textContent = meta.desc;
+
+  var pills = document.querySelectorAll('.step-pill');
+  for(var j=0;j<pills.length;j++){
+    pills[j].classList.remove('active','completed');
+    if(j === index) pills[j].classList.add('active');
+    else if(j < index) pills[j].classList.add('completed');
+  }
+
+  document.getElementById('btn-prev').disabled = index === 0;
+  var isLast = index === sc.steps.length - 1;
+  document.getElementById('btn-next').disabled = isLast;
+  document.getElementById('btn-next').textContent = isLast ? 'End of flow' : 'Next \u2192';
+  document.getElementById('nav-counter').textContent = (index + 1) + ' / ' + sc.steps.length;
+
+  updateDevNotes();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function goNext(){
+  var sc = scenarios[currentScenario];
+  if(currentStepIndex < sc.steps.length - 1) showStep(currentStepIndex + 1);
+}
+
+function goPrev(){
+  if(currentStepIndex > 0) showStep(currentStepIndex - 1);
+}
+
+function toggleDevNotes(){
+  devNotesVisible = !devNotesVisible;
+  document.getElementById('dev-notes-toggle').textContent = 'Dev Notes: ' + (devNotesVisible ? 'ON' : 'OFF');
+  document.getElementById('dev-notes-toggle').classList.toggle('active', devNotesVisible);
+  updateDevNotes();
+}
+
+function updateDevNotes(){
+  var notes = document.querySelectorAll('.dev-note');
+  for(var i=0;i<notes.length;i++){
+    if(devNotesVisible) notes[i].classList.add('visible');
+    else notes[i].classList.remove('visible');
+  }
+}
+
+// ── Floating Tooltip ──
+function showTooltip(e){
+  var tip=document.getElementById('floating-tooltip');
+  var rect=e.target.getBoundingClientRect();
+  tip.style.display='block';
+  tip.style.left=Math.max(8, Math.min(window.innerWidth-268, rect.left+rect.width/2-130))+'px';
+  tip.style.top=(rect.top-tip.offsetHeight-10)+'px';
+}
+function hideTooltip(){
+  document.getElementById('floating-tooltip').style.display='none';
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e){
+  if(document.getElementById('password-gate').classList.contains('hidden')){
+    if(e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); goNext(); }
+    if(e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); goPrev(); }
+  }
+});
+</script>
+</body>
+</html>
