@@ -330,6 +330,34 @@
   /* ── Footer ── */
   .footer{text-align:center;padding:32px 16px;font-size:11px;color:#aaa}
 
+  /* ── Credit Form (v3) ── */
+  .credit-form-section{max-width:1080px;margin:0 auto;padding:32px 16px}
+  .credit-form-card{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden}
+  .credit-form-header{background:linear-gradient(135deg,#1a3c6e,#0072aa);padding:24px 28px;color:#fff}
+  .credit-form-header h3{font-size:18px;font-weight:700;margin-bottom:6px}
+  .credit-form-header p{font-size:13px;opacity:.85;line-height:1.5}
+  .credit-form-body{padding:28px}
+  .credit-form-body .form-intro{font-size:13px;color:#666;line-height:1.6;margin-bottom:20px;padding:12px 16px;background:#f0f7ff;border-radius:8px;border-left:3px solid #0072aa}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px}
+  .form-group{display:flex;flex-direction:column}
+  .form-group label{font-size:12px;font-weight:600;color:#555;margin-bottom:5px;display:flex;align-items:center;gap:4px}
+  .form-group label .prefilled-tag{font-size:9px;background:#e6f9f0;color:#15803d;padding:2px 6px;border-radius:4px;font-weight:600}
+  .form-group input,.form-group select{padding:11px 14px;border:1.5px solid #ddd;border-radius:8px;font-size:14px;font-weight:600;color:#333;background:#fff;outline:none}
+  .form-group input:focus,.form-group select:focus{border-color:#00b7b2;box-shadow:0 0 0 3px rgba(0,183,178,.1)}
+  .form-group input.prefilled{background:#f8fffe;border-color:#b2ecd3}
+  .form-group .field-note{font-size:11px;color:#999;margin-top:3px}
+  .form-divider{grid-column:1/-1;border:none;border-top:1px solid #f0f0f0;margin:8px 0}
+  .form-section-label{grid-column:1/-1;font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+  .form-consent{grid-column:1/-1;display:flex;gap:10px;align-items:flex-start;padding:16px;background:#f8f9fa;border-radius:10px;margin-top:8px}
+  .form-consent input[type="checkbox"]{margin-top:3px;flex-shrink:0;width:18px;height:18px;accent-color:#00b7b2}
+  .form-consent span{font-size:13px;color:#555;line-height:1.6}
+  .form-consent a{color:#0066cc;text-decoration:underline}
+  .form-actions{grid-column:1/-1;display:flex;gap:12px;margin-top:12px}
+  .form-btn-primary{flex:1;padding:14px 24px;background:#00b7b2;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
+  .form-btn-primary:hover{background:#009e99}
+  .form-btn-secondary{padding:14px 24px;background:#fff;color:#555;border:2px solid #ddd;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
+  .form-btn-secondary:hover{border-color:#00b7b2;color:#00b7b2}
+
   /* ── Odds Drawer ── */
   .odds-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;opacity:0;transition:opacity .3s}
   .odds-drawer-overlay.open{display:block;opacity:1}
@@ -421,6 +449,10 @@
     .chc-footer-cta .cta-btns{flex-direction:column;gap:10px}
     .chc-footer-cta .cta-btns button{width:100%}
     .chc-disclaimer,.chc-copyright{padding-left:12px;padding-right:12px}
+    .form-grid{grid-template-columns:1fr}
+    .form-actions{flex-direction:column}
+    .credit-form-body{padding:20px}
+    .credit-form-header{padding:20px}
     .odds-drawer{width:100vw}
     .odds-drawer-body{padding:16px}
     .odds-level{gap:10px;padding:12px 0}
@@ -450,6 +482,8 @@
       <option value="compare">Compare: Original vs Compliant Dashboard</option>
       <option value="compliant-pl">Compliant PL Results Page</option>
       <option value="full">Full Compliant Journey</option>
+      <option value="v3-form">v3: User-Confirmed Credit Data Form</option>
+      <option value="all-versions">Compare All 3 Versions</option>
     </select>
     <button class="dev-notes-btn" id="dev-notes-toggle" onclick="toggleDevNotes()">Dev Notes: OFF</button>
   </div>
@@ -1130,6 +1164,173 @@
     <div class="footer"><p>Prototype &#8212; CHC Compliance Prototype | MoneyHero HK | 2026-03-19</p></div>
   </div>
 
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <!-- ══ CHC DASHBOARD v3 — USER-CONFIRMED CREDIT DATA FORM ══ -->
+  <!-- ══════════════════════════════════════════════════════════════════════════ -->
+  <div class="screen" id="screen-chc-dashboard-v3">
+    <div class="chc-header">
+      <img class="chc-logo" src="https://mhgprod.blob.core.windows.net/moneyhero/strapi-uploads/1_moneyhero_dbd2868f87.svg" alt="MoneyHero">
+      <span class="chc-logout">Logout</span>
+    </div>
+    <div class="dev-note" data-note="chc-dashboard-v3"><strong>VERSION 3: USER-CONFIRMED CREDIT DATA FORM</strong><br><br><strong>Compliance approach:</strong> CRA data is accessed to show the credit report (safe). The form pre-fills the user's credit data for convenience, but the user must actively review, optionally modify, and submit the form before any product matching occurs.<br><br><strong>Why this may be compliant:</strong><br>&#8226; Purpose of accessing CRA data = showing credit report (informational, safe under 2.12)<br>&#8226; Product matching is based on USER-SUBMITTED data, not directly on CRA data<br>&#8226; User has genuine agency &#8212; they can modify values before submitting<br>&#8226; Form includes fields beyond credit data (income, employment, loan purpose) making it a real application, not a rubber stamp<br>&#8226; Mirrors MoneyHero's existing "self-reported data matching" model<br><br><strong>Residual risk:</strong> PDPC could view pre-fill as functionally equivalent to direct CRA usage if most users don't modify values. Strengthen by making the form feel like a genuine input step with meaningful user choices.</div>
+
+    <!-- Blue Hero (same as other dashboards) -->
+    <div class="chc-hero">
+      <div class="chc-hero-inner">
+        <div class="chc-hero-left">
+          <h2>Hello, FUN FOURTEEN TUCIS</h2>
+          <div class="chc-updated">Last updated: Mar 18, 2026 5:57pm</div>
+          <div class="chc-tu">&#9432; Your credit score is provided by TransUnion</div>
+        </div>
+        <div class="chc-hero-right">
+          <div class="chc-score-row">
+            <div class="chc-score-col">
+              <div class="score-label">Your Credit Score</div>
+              <div class="score-value">2932<span class="decimal">.6000</span></div>
+            </div>
+            <div class="chc-score-col">
+              <div class="score-label">MoneyHero Rating</div>
+              <div class="rating-value">Poor</div>
+            </div>
+          </div>
+          <div class="chc-insight-msg">Your credit grade remains steady &#8212; stability helps build long-term strength.</div>
+          <div class="chc-actions">
+            <button class="chc-btn-teal">Get My Insight</button>
+            <button class="chc-btn-outline">View Full Report</button>
+            <a class="chc-link-teal">See Tips to Improve Credit Score</a>
+          </div>
+        </div>
+      </div>
+      <div class="chc-habits-strip">
+        <span>Build Your Healthy Credit Habits</span>
+        <span style="font-size:18px">&#8594;</span>
+      </div>
+    </div>
+
+    <!-- Credit Data Form -->
+    <div class="credit-form-section">
+      <div class="credit-form-card">
+        <div class="credit-form-header">
+          <h3>Find Your Best Loan Match</h3>
+          <p>We've pre-filled your details from your credit report for convenience. Review the information below, make any changes you'd like, and submit to see your personalised loan comparison.</p>
+        </div>
+        <div class="credit-form-body">
+          <div class="form-intro">&#9432; Your credit report data has been pre-filled below. You can edit any field before submitting. Your approval odds will be calculated based on what you submit here.</div>
+
+          <div class="form-grid">
+            <div class="form-section-label">Credit Profile (from your credit report)</div>
+
+            <div class="form-group">
+              <label>Credit Score <span class="prefilled-tag">Pre-filled</span></label>
+              <input type="text" value="2932" class="prefilled" readonly>
+              <div class="field-note">From your TransUnion credit report</div>
+            </div>
+
+            <div class="form-group">
+              <label>Credit Grade <span class="prefilled-tag">Pre-filled</span></label>
+              <input type="text" value="HH (Fair)" class="prefilled" readonly>
+              <div class="field-note">TransUnion grade based on your score</div>
+            </div>
+
+            <div class="form-group">
+              <label>Credit Utilisation <span class="prefilled-tag">Pre-filled</span></label>
+              <input type="text" value="22.4%" class="prefilled">
+              <div class="field-note">You can update if this has changed</div>
+            </div>
+
+            <div class="form-group">
+              <label>Number of Active Accounts <span class="prefilled-tag">Pre-filled</span></label>
+              <input type="text" value="4" class="prefilled">
+            </div>
+
+            <hr class="form-divider">
+            <div class="form-section-label">Your Details (please verify or update)</div>
+
+            <div class="form-group">
+              <label>Monthly Income (HK$)</label>
+              <input type="text" value="35,000" placeholder="e.g. 35,000">
+            </div>
+
+            <div class="form-group">
+              <label>Employment Type</label>
+              <select>
+                <option selected>Full-time employed</option>
+                <option>Part-time employed</option>
+                <option>Self-employed</option>
+                <option>Freelancer / Contract</option>
+                <option>Unemployed</option>
+                <option>Retired</option>
+                <option>Student</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Existing Monthly Debt Repayments (HK$)</label>
+              <input type="text" value="5,200" placeholder="e.g. 5,200">
+              <div class="field-note">Include all loan and credit card minimum payments</div>
+            </div>
+
+            <div class="form-group">
+              <label>Residential Status</label>
+              <select>
+                <option selected>Renting</option>
+                <option>Own property (with mortgage)</option>
+                <option>Own property (no mortgage)</option>
+                <option>Living with family</option>
+              </select>
+            </div>
+
+            <hr class="form-divider">
+            <div class="form-section-label">Loan Preferences</div>
+
+            <div class="form-group">
+              <label>Desired Loan Amount (HK$)</label>
+              <input type="text" value="200,000" placeholder="e.g. 200,000">
+            </div>
+
+            <div class="form-group">
+              <label>Preferred Tenure (months)</label>
+              <select>
+                <option>12</option>
+                <option selected>24</option>
+                <option>36</option>
+                <option>48</option>
+                <option>60</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Loan Purpose</label>
+              <select>
+                <option selected>Debt consolidation</option>
+                <option>Home renovation</option>
+                <option>Medical expenses</option>
+                <option>Education</option>
+                <option>Travel</option>
+                <option>Tax payment</option>
+                <option>Wedding</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div class="form-consent">
+              <input type="checkbox" checked>
+              <span>I confirm that the information above is accurate to the best of my knowledge. I understand that my approval odds will be estimated based on the data I submit here, and that actual approval is subject to each lender's assessment. <a href="#">Privacy Policy</a> &middot; <a href="#">Terms of Use</a></span>
+            </div>
+
+            <div class="form-actions">
+              <button class="form-btn-primary" onclick="goNext()">See My Approval Odds</button>
+              <button class="form-btn-secondary">Reset to Credit Report Values</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chc-disclaimer"><p>Disclaimer: The approval odds shown after submission are estimates based on the information you provide and data from users with similar profiles. They do not constitute a guarantee of approval. Each lender has their own assessment criteria. MoneyHero does not make lending decisions.</p></div>
+    <div class="chc-copyright"><p>&copy; 2013-2026 MoneyHero Global Limited (Registered in Hong Kong under company number IB4714) ("MHGL"). All rights reserved.</p></div>
+  </div>
+
 </div><!-- /screen-container -->
 
 <!-- Floating Tooltip -->
@@ -1369,13 +1570,16 @@ function plToggleMoreCards(){
 var stepMeta = {
   'chc-dashboard':    {title:'CHC Dashboard (Original)', desc:'Original non-compliant version \u2014 products filtered/sorted by credit profile, no user-initiated sort'},
   'chc-dashboard-v2': {title:'CHC Dashboard (Compliant v2)', desc:'PDPC-compliant: neutral title, user-initiated sort, show 5 most popular with show-more, odds as informational'},
-  'pl-compliant':     {title:'PL Results (Compliant)', desc:'MoneyHero PL page with compliant filter bar, all products shown, odds as informational reference'}
+  'pl-compliant':     {title:'PL Results (Compliant)', desc:'MoneyHero PL page with compliant filter bar, all products shown, odds as informational reference'},
+  'chc-dashboard-v3': {title:'CHC Dashboard (v3 — User Form)', desc:'User reviews pre-filled credit data, can modify, and actively submits before seeing approval odds. Odds based on user-submitted data, not directly on CRA data.'}
 };
 
 var scenarios = {
   'compare':      {name:'Compare: Original vs Compliant Dashboard', steps:['chc-dashboard','chc-dashboard-v2']},
   'compliant-pl': {name:'Compliant PL Results Page', steps:['chc-dashboard-v2','pl-compliant']},
-  'full':         {name:'Full Compliant Journey', steps:['chc-dashboard-v2','pl-compliant']}
+  'full':         {name:'Full Compliant Journey', steps:['chc-dashboard-v2','pl-compliant']},
+  'v3-form':      {name:'v3: User-Confirmed Credit Data Form', steps:['chc-dashboard-v3','pl-compliant']},
+  'all-versions': {name:'Compare All 3 Versions', steps:['chc-dashboard','chc-dashboard-v2','chc-dashboard-v3']}
 };
 
 var currentScenario = 'compare';
