@@ -330,6 +330,31 @@
   /* ── Footer ── */
   .footer{text-align:center;padding:32px 16px;font-size:11px;color:#aaa}
 
+  /* ── Odds Drawer ── */
+  .odds-drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;opacity:0;transition:opacity .3s}
+  .odds-drawer-overlay.open{display:block;opacity:1}
+  .odds-drawer{position:fixed;right:-480px;top:0;bottom:0;width:480px;max-width:100vw;background:#fff;z-index:8001;transition:right .3s ease;overflow-y:auto;box-shadow:-4px 0 24px rgba(0,0,0,.15)}
+  .odds-drawer.open{right:0}
+  .odds-drawer-header{padding:20px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:1}
+  .odds-drawer-header h3{font-size:18px;font-weight:700;color:#222}
+  .odds-drawer-close{width:36px;height:36px;border-radius:50%;border:1.5px solid #ddd;background:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;color:#555;cursor:pointer}
+  .odds-drawer-close:hover{background:#f5f5f5;border-color:#999}
+  .odds-drawer-body{padding:24px}
+  .odds-drawer-body h4{font-size:15px;font-weight:700;color:#222;margin:24px 0 10px}
+  .odds-drawer-body h4:first-child{margin-top:0}
+  .odds-drawer-body p{font-size:14px;color:#555;line-height:1.7;margin-bottom:12px}
+  .odds-level{display:flex;align-items:flex-start;gap:14px;padding:16px 0;border-bottom:1px solid #f0f0f0}
+  .odds-level:last-child{border-bottom:none}
+  .odds-level-badge{flex-shrink:0;width:56px;display:flex;justify-content:center;padding-top:2px}
+  .odds-level-badge .odds-badge{font-size:14px;padding:6px 16px}
+  .odds-level-info{flex:1}
+  .odds-level-info .level-title{font-size:14px;font-weight:700;color:#222;margin-bottom:4px}
+  .odds-level-info .level-desc{font-size:13px;color:#666;line-height:1.6}
+  .odds-drawer-section{background:#f8f9fa;border-radius:10px;padding:16px 18px;margin:16px 0}
+  .odds-drawer-section .section-icon{font-size:20px;margin-bottom:8px}
+  .odds-drawer-section h5{font-size:14px;font-weight:700;color:#222;margin-bottom:6px}
+  .odds-drawer-section p{font-size:13px;color:#555;line-height:1.6;margin-bottom:0}
+
   /* ── MOBILE ── */
   @media(max-width:768px){
     .hamburger{display:block}
@@ -396,6 +421,9 @@
     .chc-footer-cta .cta-btns{flex-direction:column;gap:10px}
     .chc-footer-cta .cta-btns button{width:100%}
     .chc-disclaimer,.chc-copyright{padding-left:12px;padding-right:12px}
+    .odds-drawer{width:100vw}
+    .odds-drawer-body{padding:16px}
+    .odds-level{gap:10px;padding:12px 0}
   }
 </style>
 </head>
@@ -577,7 +605,7 @@
             <div class="detail-cell"><div class="dc-label">Monthly Repayment</div><div class="dc-value">HK$ 7,994</div></div>
             <div class="detail-cell"><div class="dc-label">Processing Fee</div><div class="dc-value">HK$ 0</div></div>
           </div>
-          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
           <div class="card-accordions">
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero Rewards up to HK$10,400 <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Apply through MoneyHero to receive up to HK$10,400 in rewards.</p></div></div></div>
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#9432; Loan Details <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Loan amount: HK$5,000 - HK$800,000<br>Tenure: 3 - 60 months<br>Age requirement: 18+</p></div></div></div>
@@ -596,7 +624,7 @@
             <div class="detail-cell"><div class="dc-label">Monthly Repayment</div><div class="dc-value">HK$ 7,608</div></div>
             <div class="detail-cell"><div class="dc-label">Processing Fee</div><div class="dc-value">HK$ 0</div></div>
           </div>
-          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
           <div class="card-accordions">
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero Rewards up to HK$23,200 <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Apply through MoneyHero to receive up to HK$23,200 in rewards.</p></div></div></div>
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#9432; Loan Details <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Loan amount: HK$10,000 - HK$500,000<br>Tenure: 6 - 60 months<br>Age requirement: 18+</p></div></div></div>
@@ -615,7 +643,7 @@
             <div class="detail-cell"><div class="dc-label">Monthly Repayment</div><div class="dc-value">HK$ 7,590</div></div>
             <div class="detail-cell"><div class="dc-label">Processing Fee</div><div class="dc-value">HK$ 0</div></div>
           </div>
-          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge medium">&#20013;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge medium">&#20013;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
           <div class="card-accordions">
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#9432; Loan Details <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Loan amount: HK$10,000 - HK$300,000<br>Tenure: 6 - 48 months<br>Age requirement: 18+</p></div></div></div>
           </div>
@@ -633,7 +661,7 @@
             <div class="detail-cell"><div class="dc-label">Monthly Repayment</div><div class="dc-value">HK$ 7,590</div></div>
             <div class="detail-cell"><div class="dc-label">Processing Fee</div><div class="dc-value">HK$ 0</div></div>
           </div>
-          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
           <div class="card-accordions">
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#9432; Loan Details <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Loan amount: HK$5,000 - HK$500,000<br>Tenure: 3 - 84 months<br>Age requirement: 18+</p></div></div></div>
           </div>
@@ -651,7 +679,7 @@
             <div class="detail-cell"><div class="dc-label">Monthly Repayment</div><div class="dc-value">HK$ 7,587</div></div>
             <div class="detail-cell"><div class="dc-label">Processing Fee</div><div class="dc-value">HK$ 0</div></div>
           </div>
-          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge medium">&#20013;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge medium">&#20013;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
           <div class="card-accordions">
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero Rewards up to HK$18,800 <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Apply through MoneyHero to receive up to HK$18,800 in rewards.</p></div></div></div>
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#9432; Loan Details <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p>Loan amount: HK$10,000 - HK$500,000<br>Tenure: 6 - 60 months<br>Age requirement: 18+</p></div></div></div>
@@ -874,7 +902,7 @@
             <div class="card-stat"><div class="stat-label">&#26368;&#20302;&#23526;&#38555;&#24180;&#21033;&#29575;</div><div class="stat-value">1.40%</div></div>
             <div class="card-stat"><div class="stat-label">&#25163;&#32396;&#36027;&#20302;&#33267;</div><div class="stat-value">0%</div></div>
           </div>
-          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
           <div class="card-accordions">
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero&#29518;&#36062;&#20729;&#20540; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">&#39640;&#36948; HK$6,088 &#29518;&#36062;</span></div><p style="font-size:12px;color:#666">&#36879;&#36942; MoneyHero &#25104;&#21151;&#30003;&#35531;&#21487;&#29554;&#29518;&#36062;&#12290;&#21463;&#26781;&#27454;&#21450;&#32048;&#21063;&#32004;&#26463;&#12290;</p></div></div></div>
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#30003;&#35531;&#27493;&#39519; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><ol class="card-steps"><li>&#40670;&#25802;&#12300;&#31435;&#21363;&#30003;&#35531;&#12301;&#21069;&#24448;&#37504;&#34892;&#32178;&#31449;</li><li>&#22635;&#23531;&#30003;&#35531;&#34920;&#26684;&#21450;&#19978;&#20659;&#25152;&#38656;&#25991;&#20214;</li><li>&#37504;&#34892;&#23529;&#25209;&#21450;&#36890;&#30693;&#32080;&#26524;</li></ol></div></div></div>
@@ -899,7 +927,7 @@
             <div class="card-stat"><div class="stat-label">&#26368;&#20302;&#23526;&#38555;&#24180;&#21033;&#29575;</div><div class="stat-value">1.38%</div></div>
             <div class="card-stat"><div class="stat-label">&#25163;&#32396;&#36027;&#20302;&#33267;</div><div class="stat-value">0%</div></div>
           </div>
-          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
           <div class="card-accordions">
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero&#29518;&#36062;&#20729;&#20540; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">&#39640;&#36948; HK$23,200 &#29518;&#36062;</span></div><p style="font-size:12px;color:#666">&#36879;&#36942; MoneyHero &#25104;&#21151;&#30003;&#35531;&#21487;&#29554;&#29518;&#36062;&#12290;&#21463;&#26781;&#27454;&#21450;&#32048;&#21063;&#32004;&#26463;&#12290;</p></div></div></div>
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#29986;&#21697;&#36039;&#35338; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p style="font-size:13px;color:#555;line-height:1.7">&#24180;&#40801;&#35201;&#27714;&#65306;18&#27506;&#25110;&#20197;&#19978;<br>&#26368;&#20302;&#24180;&#34218;&#35201;&#27714;&#65306;HK$60,000</p></div></div></div>
@@ -930,7 +958,7 @@
             <div class="card-stat"><div class="stat-label">&#26368;&#20302;&#23526;&#38555;&#24180;&#21033;&#29575;</div><div class="stat-value">1.38%</div></div>
             <div class="card-stat"><div class="stat-label">&#25163;&#32396;&#36027;&#20302;&#33267;</div><div class="stat-value">HK$5,760</div></div>
           </div>
-          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge low">&#20302;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge low">&#20302;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
           <div class="card-accordions">
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero&#29518;&#36062;&#20729;&#20540; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">&#39640;&#36948; HK$5,888 &#29518;&#36062;</span></div></div></div></div>
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#29986;&#21697;&#36039;&#35338; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p style="font-size:13px;color:#555;line-height:1.7">&#24180;&#40801;&#35201;&#27714;&#65306;18&#27506;&#25110;&#20197;&#19978;<br>&#30003;&#35531;&#20154;&#38920;&#28858;&#39321;&#28207;&#23621;&#27665;</p></div></div></div>
@@ -954,7 +982,7 @@
             <div class="card-stat"><div class="stat-label">&#26368;&#20302;&#23526;&#38555;&#24180;&#21033;&#29575;</div><div class="stat-value">1.12%</div></div>
             <div class="card-stat"><div class="stat-label">&#25163;&#32396;&#36027;&#20302;&#33267;</div><div class="stat-value">0%</div></div>
           </div>
-          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge high">&#39640;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
           <div class="card-accordions">
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero&#29518;&#36062;&#20729;&#20540; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">&#39640;&#36948; HK$4,000 &#29518;&#36062;</span></div></div></div></div>
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#29986;&#21697;&#36039;&#35338; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p style="font-size:13px;color:#555;line-height:1.7">&#24180;&#40801;&#35201;&#27714;&#65306;18&#27506;&#25110;&#20197;&#19978;<br>&#30003;&#35531;&#20154;&#38920;&#28858;&#39321;&#28207;&#23621;&#27665;</p></div></div></div>
@@ -978,7 +1006,7 @@
             <div class="card-stat"><div class="stat-label">&#26368;&#20302;&#23526;&#38555;&#24180;&#21033;&#29575;</div><div class="stat-value">6.28%</div></div>
             <div class="card-stat"><div class="stat-label">&#25163;&#32396;&#36027;&#20302;&#33267;</div><div class="stat-value">0%</div></div>
           </div>
-          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()">&#9432;</span></span><span class="cob-badge"><span class="odds-badge low">&#20302;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
+          <div class="card-odds-banner"><span class="cob-label">&#25209;&#26680;&#27231;&#26371; <span class="info-icon tooltip-trigger" onmouseenter="showTooltip(event)" onmouseleave="hideTooltip()" onclick="showTooltip(event)">&#9432;</span></span><span class="cob-badge"><span class="odds-badge low">&#20302;</span></span><span class="cob-meta">&#26356;&#26032;&#65306;2026&#24180;3&#26376;18&#26085;</span></div>
           <div class="card-accordions">
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#127873; MoneyHero&#29518;&#36062;&#20729;&#20540; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><div class="card-reward-detail"><span class="reward-icon">&#127873;</span><span class="reward-text">&#39640;&#36948; HK$1,100 &#29518;&#36062;</span></div></div></div></div>
             <div class="card-accordion"><div class="card-accordion-header" onclick="toggleCardAccordion(this)">&#29986;&#21697;&#36039;&#35338; <span class="acc-arrow">&#9660;</span></div><div class="card-accordion-body"><div class="card-accordion-content"><p style="font-size:13px;color:#555;line-height:1.7">&#24180;&#40801;&#35201;&#27714;&#65306;18&#27506;&#25110;&#20197;&#19978;<br>&#26368;&#20302;&#24180;&#34218;&#35201;&#27714;&#65306;HK$60,000</p></div></div></div>
@@ -1051,8 +1079,7 @@
         <div class="calc-field"><label>&#36996;&#27454;&#26399; (&#26376;) <span class="info-sm">i</span></label><input type="text" value="24" readonly></div>
       </div>
 
-      <!-- Informational Odds Banner -->
-      <div class="odds-banner informational"><span class="icon">&#9432;</span><div>Your approval odds are shown for reference based on your credit profile. All products are displayed regardless of your approval likelihood.</div></div>
+      <div class="results-info">Approval odds last updated 18 Mar 2026</div>
 
       <!-- Filter / Sort Bar -->
       <div class="v2-filter-bar" id="v2-filter-bar-pl">
@@ -1107,6 +1134,63 @@
 
 <!-- Floating Tooltip -->
 <div class="floating-tooltip" id="floating-tooltip">&#25209;&#26680;&#27231;&#26371;&#26681;&#25818;&#33287;&#24744;&#30456;&#20284;&#20449;&#36024;&#29376;&#27841;&#30340;&#29992;&#25142;&#25976;&#25818;&#20272;&#31639;&#65292;&#20677;&#20379;&#21443;&#32771;&#65292;&#19981;&#20445;&#35657;&#29554;&#25209;&#25110;&#34987;&#25298;&#12290;</div>
+
+<!-- Odds Info Drawer -->
+<div class="odds-drawer-overlay" id="odds-drawer-overlay" onclick="closeOddsDrawer()"></div>
+<div class="odds-drawer" id="odds-drawer">
+  <div class="odds-drawer-header">
+    <h3>Your Approval Odds</h3>
+    <button class="odds-drawer-close" onclick="closeOddsDrawer()">&times;</button>
+  </div>
+  <div class="odds-drawer-body">
+
+    <h4>What do the levels mean?</h4>
+
+    <div class="odds-level">
+      <div class="odds-level-badge"><span class="odds-badge high" style="font-size:14px;padding:6px 16px">&#39640;</span></div>
+      <div class="odds-level-info">
+        <div class="level-title">High Approval Odds</div>
+        <div class="level-desc">Based on users with a similar credit profile, there's a strong chance you'll be approved for this product. The terms shown (interest rate, fees) are indicative and may change after final lender assessment.</div>
+      </div>
+    </div>
+
+    <div class="odds-level">
+      <div class="odds-level-badge"><span class="odds-badge medium" style="font-size:14px;padding:6px 16px">&#20013;</span></div>
+      <div class="odds-level-info">
+        <div class="level-title">Medium Approval Odds</div>
+        <div class="level-desc">There's a reasonable chance of approval, but it's not certain. Other factors such as income, employment status, and existing debt may affect the lender's final decision.</div>
+      </div>
+    </div>
+
+    <div class="odds-level">
+      <div class="odds-level-badge"><span class="odds-badge low" style="font-size:14px;padding:6px 16px">&#20302;</span></div>
+      <div class="odds-level-info">
+        <div class="level-title">Low Approval Odds</div>
+        <div class="level-desc">Based on similar credit profiles, approval is less likely. You may still apply, but consider that an unsuccessful application will add a hard enquiry to your credit report.</div>
+      </div>
+    </div>
+
+    <h4>Approval odds do not guarantee approval</h4>
+    <p>Your approval odds are an estimate based on data from users with similar credit profiles. They are provided for <strong>informational purposes only</strong> and do not constitute a guarantee of approval or rejection by any lender. Each lender has their own assessment criteria that may include factors beyond your credit report.</p>
+
+    <h4>How are approval odds calculated?</h4>
+    <p>Your approval odds are derived from your credit profile provided by TransUnion, including your credit score, credit grade, and credit history. We compare your profile against historical approval data from users with similar credit characteristics to estimate the likelihood of approval for each product.</p>
+
+    <div class="odds-drawer-section">
+      <div class="section-icon">&#128161;</div>
+      <h5>How approval odds help you</h5>
+      <p>Every time you apply for a credit product, the lender performs a <strong>"hard search"</strong> on your credit report. Multiple hard searches in a short period can <strong>lower your credit score</strong> and signal financial stress to future lenders.</p>
+      <p style="margin-top:10px">By focusing on products where you have <strong>higher approval odds</strong>, you can reduce the number of unsuccessful applications &#8212; and avoid unnecessary hard searches that could hurt your credit score.</p>
+    </div>
+
+    <h4>Things to keep in mind</h4>
+    <p>&#8226; Approval odds are updated when you refresh your credit report<br>
+    &#8226; Your odds may change as your credit profile changes<br>
+    &#8226; Lenders may consider information not available in your credit report (e.g. income verification, employment)<br>
+    &#8226; Always review the full product terms before applying</p>
+
+  </div>
+</div>
 
 <!-- Navigation -->
 <div class="nav-bar" id="nav-bar">
@@ -1375,8 +1459,14 @@ function updateDevNotes(){
   }
 }
 
-// ── Floating Tooltip ──
+// ── Floating Tooltip (hover only) ──
 function showTooltip(e){
+  // On click, open drawer instead of tooltip
+  if(e.type==='click'){
+    e.preventDefault();
+    openOddsDrawer();
+    return;
+  }
   var tip=document.getElementById('floating-tooltip');
   var rect=e.target.getBoundingClientRect();
   tip.style.display='block';
@@ -1386,6 +1476,22 @@ function showTooltip(e){
 function hideTooltip(){
   document.getElementById('floating-tooltip').style.display='none';
 }
+
+// ── Odds Info Drawer ──
+function openOddsDrawer(){
+  hideTooltip();
+  document.getElementById('odds-drawer-overlay').classList.add('open');
+  document.getElementById('odds-drawer').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeOddsDrawer(){
+  document.getElementById('odds-drawer-overlay').classList.remove('open');
+  document.getElementById('odds-drawer').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') closeOddsDrawer();
+});
 
 // Keyboard navigation
 document.addEventListener('keydown', function(e){
