@@ -108,6 +108,14 @@ img{display:block;max-width:100%}
 .discovery-banner .d-cta{flex-shrink:0;padding:7px 14px;border-radius:18px;border:none;background:#e67e00;color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
 .discovery-banner .d-dismiss{background:none;border:none;color:#b39560;font-size:14px;cursor:pointer;padding:0;flex-shrink:0;opacity:.6;line-height:1}
 
+/* ── v3 Unlock Banner ── */
+.unlock-odds-banner{display:none;align-items:center;gap:12px;padding:14px 16px;margin-bottom:14px;border-radius:12px;background:linear-gradient(135deg,#f0fafa 0%,#e6f7f7 100%);border:1.5px solid #99e0dd;cursor:pointer;transition:all .15s}
+.unlock-odds-banner:hover{border-color:#00b7b2;background:#e0f5f4}
+.unlock-odds-banner .uob-icon{font-size:24px;flex-shrink:0}
+.unlock-odds-banner .uob-text{flex:1;font-size:12px;color:#555;line-height:1.4}
+.unlock-odds-banner .uob-text strong{display:block;font-size:14px;color:#00857f;margin-bottom:2px}
+.unlock-odds-banner .uob-cta{flex-shrink:0;padding:8px 16px;border-radius:20px;background:#00b7b2;color:#fff;font-size:12px;font-weight:700;white-space:nowrap}
+
 /* ── Results Count ── */
 .results-count{font-size:12px;color:#888;margin-bottom:12px}
 .results-count strong{color:#333}
@@ -348,6 +356,13 @@ img{display:block;max-width:100%}
     <button class="d-dismiss" onclick="this.parentElement.style.display='none'">&#10005;</button>
   </div>
 
+  <!-- v3 unlock banner -->
+  <div class="unlock-odds-banner" id="unlock-odds-banner" onclick="openConsent()">
+    <span class="uob-icon">&#128274;</span>
+    <span class="uob-text"><strong>Unlock your Approval Odds</strong>See how likely you are to be approved for each product. Tap to reveal.</span>
+    <span class="uob-cta">Unlock</span>
+  </div>
+
   <div class="results-count">Showing <strong id="visible-count">5</strong> of <strong>59</strong> personal loans<span id="sort-label-wrap"> &bull; Sorted by: <strong id="sort-label">Most Popular</strong></span></div>
 
   <div class="loan-table" id="loan-table"></div>
@@ -515,6 +530,7 @@ function setVersion(v){
   document.getElementById('sort-bar').classList.toggle('visible',v==='v2');
   document.getElementById('discovery-banner').style.display=(v==='v2'&&v2Sort!=='odds')?'flex':'none';
   document.getElementById('sort-label-wrap').style.display=(v==='v2')?'inline':'none';
+  document.getElementById('unlock-odds-banner').style.display=(v==='v3'&&!v3Consented)?'flex':'none';
   renderAll();
 }
 
@@ -548,6 +564,7 @@ function updateConsentBtn(){document.getElementById('consent-btn').disabled=!doc
 function grantConsent(){
   closeConsent();
   v3Consented=true;
+  document.getElementById('unlock-odds-banner').style.display='none';
   renderAll();
 }
 
