@@ -423,9 +423,29 @@ img{display:block;max-width:100%}
 
 <script>
 // ── Password ──
+// ── URL Deep Linking: #v1, #v2, #v3 ──
+function getVersionFromHash(){
+  var hash=window.location.hash.replace('#','').toLowerCase();
+  if(hash==='v1'||hash==='v2'||hash==='v3') return hash;
+  return 'v2';
+}
+function updateHash(v){
+  history.replaceState(null,null,'#'+v);
+}
+window.addEventListener('hashchange',function(){
+  var v=getVersionFromHash();
+  if(v!==currentVersion){document.getElementById('version-select').value=v;setVersion(v);}
+});
+
 function checkGate(){
   var inp=document.getElementById('gate-input');
-  if(inp.value==='chc-moneyhero'){document.getElementById('password-gate').classList.add('hidden');document.getElementById('app-content').classList.add('visible');renderAll();}
+  if(inp.value==='chc-moneyhero'){
+    document.getElementById('password-gate').classList.add('hidden');
+    document.getElementById('app-content').classList.add('visible');
+    var initVersion=getVersionFromHash();
+    document.getElementById('version-select').value=initVersion;
+    setVersion(initVersion);
+  }
   else{inp.classList.add('error');document.getElementById('gate-error').textContent='Incorrect password';setTimeout(function(){inp.classList.remove('error')},500);}
 }
 document.getElementById('gate-input').addEventListener('keydown',function(e){if(e.key==='Enter')checkGate()});
@@ -460,6 +480,7 @@ var CARDS_DEFAULT=2;
 // ── Version Switch ──
 function setVersion(v){
   currentVersion=v;
+  updateHash(v);
   v3Consented=(v==='v3')?false:v3Consented;
   v2Sort='popularity';
   expanded=false;
